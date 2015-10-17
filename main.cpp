@@ -4,6 +4,8 @@
 #include "TcpIpInternetHeaders.hpp"
 #include "Md5HashedPayload.hpp"
 
+//TODO: всю работу с libpcap я бы перенес в NetSniffer
+
 
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
 	const u_char *packet)
@@ -21,6 +23,8 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
 
 	ipHeader = (struct sniffIpHeader*)(packet + ETHER_HEADER_SIZE);
 	ipSize = IP_HL(ipHeader) * 4;
+
+	//TODO: вызывающий не может узнать о том, что что-то идет не так
 	if (ipSize < 20) {
 		std::cout << "Invalid IP header length: " << ipSize << " bytes" << std::endl;
 		return;

@@ -1,4 +1,4 @@
-#include "Md5CachedPayload.hpp"
+#include "Md5HashedPayload.hpp"
 
 
 Md5CachedPayload::Md5CachedPayload(unsigned char const *payload, 

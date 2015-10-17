@@ -1,5 +1,5 @@
-#ifndef MD5CACHEDPAYLOAD_HPP
-#define MD5CACHEDPAYLOAD_HPP
+#ifndef MD5HASHEDPAYLOAD_HPP
+#define MD5HASHEDPAYLOAD_HPP
 
 #include <openssl/md5.h>
 

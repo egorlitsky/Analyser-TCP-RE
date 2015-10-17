@@ -2,7 +2,7 @@
 #include <bitset>
 #include "NetSniffer.hpp"
 #include "TcpIpInternetHeaders.hpp"
-#include "Md5CachedPayload.hpp"
+#include "Md5HashedPayload.hpp"
 
 
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 

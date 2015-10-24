@@ -17,6 +17,7 @@ private:
         unsigned int freq;
         unsigned int heapPos;
 
+        // CacheEntry(): freq(0), heapPos(0)
         CacheEntry(unsigned int f, unsigned int hp): freq(f), heapPos(hp) {}
     };
 

@@ -114,6 +114,7 @@ void Cache::add(Md5HashedPayload const &newHashedPayload) {
 
 
 Cache::~Cache() {
+    _cache.clear();
     for (int i = 0; i < _heap.size(); ++i) {
         delete _heap[i];
     }

@@ -78,7 +78,7 @@ Md5HashedPayload &Md5HashedPayload::operator=(
 }
 
 
-bool Md5HashedPayload::operator==(Md5HashedPayload const& otherPayload) {
+bool Md5HashedPayload::operator==(Md5HashedPayload const& otherPayload) const {
     bool res = true;
 
     for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
@@ -91,6 +91,8 @@ bool Md5HashedPayload::operator==(Md5HashedPayload const& otherPayload) {
         for (unsigned int i = 0; i < size; ++i) {
             res &= _payload[i] == otherPayload._payload[i];
         }
+    } else {
+        return false;
     }
 
     return res;
@@ -118,22 +120,18 @@ unsigned char *Md5HashedPayload::copyMd5Hash() const {
     return copyHashValue;
 }
 
-
-size_t Md5HashedPayloadHasher::operator()(
-        Md5HashedPayload const &hashedPayload) {
+size_t Md5HashedPayload::getHashKey() const {
     size_t res = 0;
-    unsigned char *md5Hash = hashedPayload.copyMd5Hash();
 
     // 18446744069414584321 == 2**64 - 2**32 + 1
     size_t mod = 18446744069414584321;
     // 16777213 == 2**24 - 3
     size_t multipl = 16777213;
-    for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-        res = (res + (size_t)md5Hash[i] * multipl) % mod;
 
+    for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
+        res = (res + (size_t)_hashValue[i] * multipl) % mod;
     }
 
-    delete [] md5Hash;
     return res;
 }
 

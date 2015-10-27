@@ -1,46 +1,40 @@
 #ifndef CACHE_STRUCTURE_HPP
 #define CACHE_STRUCTURE_HPP
 
-#include <vector>
+
+#include <set>
 #include <unordered_map>
+#include <utility>
 #include "Md5HashedPayload.hpp"
 
 
 class Cache {
 private:
-    int _hits;
-    int _misses;
-    std::size_t _maxSize;
-    std::size_t _currSize;
+    int hits_;
+    int misses_;
+    std::size_t maxSize_;
+    std::size_t size_;
 
     struct CacheEntry {
-        unsigned int freq;
-        unsigned int heapPos;
+        int freq;
+        Md5HashedPayload *payload;
 
-        // CacheEntry(): freq(0), heapPos(0)
-        CacheEntry(unsigned int f, unsigned int hp): freq(f), heapPos(hp) {}
+        CacheEntry(int f, Md5HashedPayload *pl): freq(f), payload(pl) {}
+        bool operator<(CacheEntry const & a) const {
+            return freq < a.freq || freq == a.freq && payload < a.payload;
+        }
     };
 
-    std::vector<Md5HashedPayload> _heap;
-    std::unordered_map <Md5HashedPayload,
-                        CacheEntry,
-                        Md5HashedPayloadHasher> _cache;
+    typedef std::set<CacheEntry>::iterator cacheIterType;
 
-    bool compareByFreq(Md5HashedPayload const &a, Md5HashedPayload const &b);
-
-    void siftUpHeap(int index);
-    void siftDownHeap(int index);
-    void addToHeap(Md5HashedPayload const &value);
-
-    Md5HashedPayload &getLfuPayload();
-    void popFromHeap();
-
-    void updateIterators(int index);
+    std::set<CacheEntry> cache_;
+    // TODO: think about multiset to resolve collisions
+    std::unordered_map <size_t, cacheIterType> itMap_;
 
 public:
     explicit Cache(size_t cacheSize = 128);
     float getHitRate(void) const;
-    void add(Md5HashedPayload const &newHashedPayload);
+    void add(Md5HashedPayload const &hPayload);
     ~Cache();
 };
 

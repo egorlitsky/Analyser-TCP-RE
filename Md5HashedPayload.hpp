@@ -18,18 +18,15 @@ public:
     Md5HashedPayload(Md5HashedPayload const &HashedPayload);
     ~Md5HashedPayload();
     Md5HashedPayload &operator=(Md5HashedPayload const &HashedPayload);
-    bool operator==(Md5HashedPayload const& otherPayload);
+    bool operator==(Md5HashedPayload const& otherPayload) const;
 
     // swaps only non-temporary payloads
     bool swap(Md5HashedPayload &otherPayload);
 
     // returns array allocated by new operator
     unsigned char *copyMd5Hash() const;
-};
 
-
-struct Md5HashedPayloadHasher {
-    size_t operator()(Md5HashedPayload const &hashedPayload);
+    size_t getHashKey() const;
 };
 
 

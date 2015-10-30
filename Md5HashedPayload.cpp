@@ -112,14 +112,6 @@ bool Md5HashedPayload::swap(Md5HashedPayload &otherPayload) {
 }
 
 
-unsigned char *Md5HashedPayload::copyMd5Hash() const {
-    unsigned char *copyHashValue = new unsigned char[MD5_DIGEST_LENGTH];
-    for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-        copyHashValue[i] = _hashValue[i];
-    }
-    return copyHashValue;
-}
-
 size_t Md5HashedPayload::getHashKey() const {
     size_t res = 0;
 

@@ -22,10 +22,6 @@ public:
 
     // swaps only non-temporary payloads
     bool swap(Md5HashedPayload &otherPayload);
-
-    // returns array allocated by new operator
-    unsigned char *copyMd5Hash() const;
-
     size_t getHashKey() const;
 };
 

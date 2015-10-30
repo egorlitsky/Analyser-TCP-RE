@@ -1,13 +1,14 @@
-#include <stdio.h>
-#include <iostream>
 #include <arpa/inet.h>
+#include <bitset>
+#include <iostream>
+#include <stdio.h>
 #include "NetSniffer.hpp"
+#include "Md5HashedPayload.hpp"
+#include "TcpIpInternetHeaders.hpp"
 
 
-void NetSniffer::handleErrors(std::string &descrMsg) const {
-    //std::cout << descrMsg << std::endl;
-    throw PcapException(descrMsg);
-}
+void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
+    const u_char *packet);
 
 
 std::string NetSniffer::getIpAddress(void) const {
@@ -18,20 +19,20 @@ std::string NetSniffer::getIpAddress(void) const {
             return std::string(inet_ntoa(((struct sockaddr_in*)addresses->addr)->sin_addr));
         }
     }
-    
 //  std::string str = "No AF_INET interfaces have been found";
-//  return str + std::string(std::endl);
 }
 
 
-NetSniffer::NetSniffer(std::string const &inputDevName, bool promisModeOn,
-    int timeoutInMs): devInt(NULL), mask(0), net(0), compiledFilter()
+NetSniffer::NetSniffer(std::string const &inputDevName,
+                       bool promisModeOn,
+                       int timeoutInMs,
+                       int cacheSize):
+    devInt(NULL), mask(0), net(0), compiledFilter(), packetCache_(cacheSize)
 {
     if (inputDevName.empty()) {
         devName = pcap_lookupdev(errBuf);
         if (devName == NULL) {
-            std::string ErrorMsg = "Couldn't find default device";
-            handleErrors(ErrorMsg);
+            handleErrors("Couldn't find default device");
         }
 
     } else {
@@ -40,13 +41,11 @@ NetSniffer::NetSniffer(std::string const &inputDevName, bool promisModeOn,
 
     handle = pcap_open_live(devName, BUFSIZ, promisModeOn, timeoutInMs, errBuf);
     if (handle == NULL) {
-        std::string ErrorMsg = "Couldn't open device";
-        handleErrors(ErrorMsg);
+        handleErrors("Couldn't open device");
     }
 
     if (pcap_lookupnet(devName, &net, &mask, errBuf) == -1) {
-        std::string ErrorMsg = "Can't get netmask for device";
-        handleErrors(ErrorMsg);
+        handleErrors("Can't get netmask for device");
         net = 0;
         mask = 0;
     }
@@ -54,8 +53,7 @@ NetSniffer::NetSniffer(std::string const &inputDevName, bool promisModeOn,
 
     pcap_if_t *allDevs;
     if(pcap_findalldevs(&allDevs, errBuf)) {
-        std::string ErrorMsg = "Couldn't get list of interfaces";
-        handleErrors(ErrorMsg);
+        handleErrors("Couldn't get list of interfaces");
     }
 
     pcap_if_t *device = allDevs;
@@ -72,24 +70,24 @@ void NetSniffer::setFilter(std::string const &filterText) {
     if (pcap_compile(handle, &compiledFilter, filterExp, 0, net) == -1) {
         std::string ErrorMsg = "Couldn't parse filter " + filterText;
         ErrorMsg += ": " + std::string(pcap_geterr(handle));
-        // handleErrors(ErrorMsg, std::string(pcap_geterr(handle)));
         handleErrors(ErrorMsg);
     }
 
     if (pcap_setfilter(handle, &compiledFilter) == -1) {
         std::string ErrorMsg = "Couldn't set filter " + filterText;
         ErrorMsg += ": " + std::string(pcap_geterr(handle));
-        // handleErrors(ErrorMsg, std::string(pcap_geterr(handle)));
         handleErrors(ErrorMsg);
     }   
 }
 
 
-void NetSniffer::setLoop(pcap_handler callbackFunc, int numPkgs) const {
-    if (pcap_loop(handle, numPkgs, callbackFunc, NULL) == -1) {
-        std::string ErrorMsg = "An error have occured during looping";
-        handleErrors(ErrorMsg);
+void NetSniffer::setLoop(int numPkgs) const {
+    u_char *params = (u_char*)(&packetCache_);
+    if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
+        handleErrors("An error have occured during looping");
     }
+    std::cout << "Hit rate: " << (int)(packetCache_.getHitRate()*100) 
+              <<"%" << std::endl;
 }
 
 
@@ -109,3 +107,60 @@ const char *PcapException::what() const throw() {
 
 
 PcapException::~PcapException() throw() {}
+
+
+void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
+    const u_char *packet)
+{
+    const struct sniffEtherHeader *ethernetHeader;
+    const struct sniffIpHeader *ipHeader;
+    const struct sniffTcpHeader *tcpHeader;
+    unsigned char *payload;
+
+    u_int ipSize;   /* in octets */
+    u_int tcpSize;  /* in octets */
+
+    ethernetHeader = (struct sniffEtherHeader*)(packet);
+
+    ipHeader = (struct sniffIpHeader*)(packet + ETHER_HEADER_SIZE);
+    ipSize = IP_HL(ipHeader) * 4;
+
+    //TODO: вызывающий не может узнать о том, что что-то идет не так
+    if (ipSize < 20) {
+        std::cout << "Invalid IP header length: " << ipSize
+                << " bytes" << std::endl;
+        return;
+    }
+
+    tcpHeader = (struct sniffTcpHeader*)(packet + ETHER_HEADER_SIZE + ipSize);
+    tcpSize = TCP_OFF(tcpHeader) * 4;
+    if (tcpSize < 20) {
+        std::cout << "Invalid TCP header length: " << tcpSize
+                  << " bytes" << std::endl;
+        return;
+    }
+
+    payload = (unsigned char *)(packet + ETHER_HEADER_SIZE + ipSize + tcpSize);
+    int payloadSize = (int)(ntohs(ipHeader->ipTotLen)) - (int)(ipSize) - (int)(tcpSize);
+    if (payloadSize < 0) {
+        std::cout << "Invalid payload length: " << payloadSize 
+                  << " bytes" << std::endl;
+        return;
+    }
+
+    if (payloadSize == 0) {
+        std::cout << "No payload present" << std::endl;
+        return;
+    }
+
+    std::cout << "Packet captured, payload length = " << payloadSize
+              << " bytes" << std::endl;
+
+    Md5HashedPayload HashedPayload(payload, payloadSize, true);
+
+    void *vPtr = (void*)args;
+    Cache *cache = (Cache*)vPtr;
+    cache->add(HashedPayload);
+
+    return;
+}

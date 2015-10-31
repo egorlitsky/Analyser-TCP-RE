@@ -4,7 +4,6 @@ lib_dep = -lpcap -lcrypto
 lib_gtest = -lpthread -lgtest -lgtest_main -L/usr/lib/
 
 
-
 all: $(program_name)
 	
 

@@ -4,11 +4,6 @@ lib_dep = -lpcap -lcrypto
 lib_gtest = -lpthread -lgtest -lgtest_main -L/usr/lib/
 
 
-CacheStructure.hpp: Md5HashedPayload.hpp
-	
-
-NetSniffer.hpp: CacheStructure.hpp
-	
 
 all: $(program_name)
 	

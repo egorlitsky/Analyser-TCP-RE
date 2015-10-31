@@ -2,8 +2,9 @@
 #include "NetSniffer.hpp"
 #include "Md5HashedPayload.hpp"
 
-
+//TODO: бывает еще, например, eth => командная строка
 #define DEV_NAME "wlan0"
+//TODO: const ???
 #define NUMBER_OF_PACKAGES 512
 #define PROMICIOUS_MODE false
 #define TIMEOUT_MS 100

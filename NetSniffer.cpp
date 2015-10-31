@@ -36,6 +36,8 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
         }
 
     } else {
+        //TODO: указатель на внешнююб переменную, которая может умеренть
+        //TODO: сделать строкой?
         devName = inputDevName.c_str();
     }
 

@@ -116,7 +116,7 @@ size_t Md5HashedPayload::getHashKey() const {
     size_t res = 0;
 
     // 18446744069414584321 == 2**64 - 2**32 + 1
-    size_t mod = 18446744069414584321;
+    size_t mod = 18446744069414584321U;
     // 16777213 == 2**24 - 3
     size_t multipl = 16777213;
 

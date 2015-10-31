@@ -37,11 +37,16 @@ private:
 public:
     NetSniffer(std::string const &inputDevName, bool promisModeOn,
         int timeoutInMs, int cacheSize);
+    NetSniffer(const char *inputSavefile, int cacheSize);
 
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
     void setLoop(int numPkgs = 1) const;
     ~NetSniffer();
+
+    int getHitRatePersent() const {
+        return packetCache_.getHitRate() * 100;
+    }
 };
 
 

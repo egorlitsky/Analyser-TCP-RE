@@ -64,9 +64,18 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 }
 
 
+NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
+    devInt(NULL), mask(0), net(0), compiledFilter(), packetCache_(cacheSize)
+{
+    handle = pcap_open_offline(inputSavefile, errBuf);
+    if (handle == NULL) {
+        handleErrors("Couldn't open input savefile");
+    }
+}
+
+
 void NetSniffer::setFilter(std::string const &filterText) {
     const char *filterExp = filterText.c_str();
-
     if (pcap_compile(handle, &compiledFilter, filterExp, 0, net) == -1) {
         std::string ErrorMsg = "Couldn't parse filter " + filterText;
         ErrorMsg += ": " + std::string(pcap_geterr(handle));
@@ -86,8 +95,6 @@ void NetSniffer::setLoop(int numPkgs) const {
     if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
         handleErrors("An error have occured during looping");
     }
-    std::cout << "Hit rate: " << (int)(packetCache_.getHitRate()*100) 
-              <<"%" << std::endl;
 }
 
 

@@ -1,39 +1,46 @@
+CC = g++
+LD = g++
+
+SRC_DIR = src
+TEST_DIR = test
+BUILD_DIR = bin
+
 program_name = SniferEx
 test_name = SnifferTest
-lib_dep = -lpcap -lcrypto
-lib_gtest = -lpthread -lgtest -lgtest_main -L/usr/lib/
+LIB_DEP = -lpcap -lcrypto
+LIB_TEST = -lpthread -lgtest -lgtest_main -L/usr/lib/
 
 
-all: $(program_name)
+all: $(BUILD_DIR)/$(program_name)
 	
 
-test: $(test_name)
+test: $(BUILD_DIR)/$(test_name)
 	
 
-$(program_name): main.o NetSniffer.o Md5HashedPayload.o CacheStructure.o
-	g++ -std=c++11 $^ $(lib_dep) -o $@
+$(BUILD_DIR)/$(program_name): $(BUILD_DIR)/main.o $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/CacheStructure.o
+	$(LD) -std=c++11 $^ $(LIB_DEP) -o $@
 
-main.o: main.cpp NetSniffer.hpp
-	g++ -std=c++11 -c main.cpp -o $@
+$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(SRC_DIR)/NetSniffer.hpp
+	$(CC) -std=c++11 -c $(SRC_DIR)/main.cpp -o $@
 
-NetSniffer.o: NetSniffer.cpp NetSniffer.hpp TcpIpInternetHeaders.hpp Md5HashedPayload.hpp CacheStructure.hpp
-	g++ -std=c++11 -c NetSniffer.cpp -o $@
+$(BUILD_DIR)/NetSniffer.o: $(SRC_DIR)/NetSniffer.cpp $(SRC_DIR)/NetSniffer.hpp $(SRC_DIR)/TcpIpInternetHeaders.hpp $(SRC_DIR)/Md5HashedPayload.hpp $(SRC_DIR)/CacheStructure.hpp
+	$(CC) -std=c++11 -c $(SRC_DIR)/NetSniffer.cpp -o $@
 
-Md5CachedPayload.o: Md5HashedPayload.cpp Md5HashedPayload.hpp
-	g++ -std=c++11 -c Md5HashedPayload.cpp -o $@
+$(BUILD_DIR)/Md5HashedPayload.o: $(SRC_DIR)/Md5HashedPayload.cpp $(SRC_DIR)/Md5HashedPayload.hpp
+	$(CC) -std=c++11 -c $(SRC_DIR)/Md5HashedPayload.cpp -o $@
 
-CacheStructure.o: CacheStructure.cpp CacheStructure.hpp Md5HashedPayload.hpp
-	g++ -std=c++11 -c CacheStructure.cpp -o $@
+$(BUILD_DIR)/CacheStructure.o: $(SRC_DIR)/CacheStructure.cpp $(SRC_DIR)/CacheStructure.hpp $(SRC_DIR)/Md5HashedPayload.hpp
+	$(CC) -std=c++11 -c $(SRC_DIR)/CacheStructure.cpp -o $@
 
 
 
-$(test_name): UnitTests.o NetSniffer.o Md5HashedPayload.o CacheStructure.o
-	g++ -std=c++11 $^ $(lib_dep) $(lib_gtest) -o $@
+$(BUILD_DIR)/$(test_name): $(BUILD_DIR)/UnitTests.o $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/CacheStructure.o
+	$(LD) -std=c++11 $^ $(LIB_DEP) $(LIB_TEST) -o $@
 
-UnitTests.o: UnitTests.cpp NetSniffer.hpp
-	g++ -std=c++11 -c UnitTests.cpp -o $@
+$(BUILD_DIR)/UnitTests.o: $(TEST_DIR)/UnitTests.cpp $(SRC_DIR)/NetSniffer.hpp $(SRC_DIR)/TcpIpInternetHeaders.hpp $(SRC_DIR)/Md5HashedPayload.hpp $(SRC_DIR)/CacheStructure.hpp
+	$(CC) -std=c++11 -c -I ./$(SRC_DIR) $(TEST_DIR)/UnitTests.cpp -o $@
 
 
 
 clean:
-	rm -rf *.o SniferEx
+	rm -rf $(BUILD_DIR)/*.o $(BUILD_DIR)/$(program_name) $(BUILD_DIR)/$(test_name)

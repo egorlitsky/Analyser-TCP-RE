@@ -29,24 +29,25 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
                        int cacheSize):
     devInt(NULL), mask(0), net(0), compiledFilter(), packetCache_(cacheSize)
 {
+    std::string devName;
     if (inputDevName.empty()) {
-        devName = pcap_lookupdev(errBuf);
-        if (devName == NULL) {
+        const char * defDevName = pcap_lookupdev(errBuf);
+        if (defDevName == NULL) {
             handleErrors("Couldn't find default device");
         }
+        devName = defDevName;
 
     } else {
-        //TODO: указатель на внешнююб переменную, которая может умеренть
-        //TODO: сделать строкой?
-        devName = inputDevName.c_str();
+        devName = inputDevName;
     }
 
-    handle = pcap_open_live(devName, BUFSIZ, promisModeOn, timeoutInMs, errBuf);
+    handle = pcap_open_live(devName.c_str(), BUFSIZ, promisModeOn,
+                            timeoutInMs, errBuf);
     if (handle == NULL) {
         handleErrors("Couldn't open device");
     }
 
-    if (pcap_lookupnet(devName, &net, &mask, errBuf) == -1) {
+    if (pcap_lookupnet(devName.c_str(), &net, &mask, errBuf) == -1) {
         handleErrors("Can't get netmask for device");
         net = 0;
         mask = 0;
@@ -60,7 +61,7 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 
     pcap_if_t *device = allDevs;
     for (pcap_if_t *device = allDevs; device != NULL; device = device->next) {
-        if (!std::string(device->name).compare(std::string(devName)))
+        if (!std::string(device->name).compare(devName))
             devInt = device;
     }
 }
@@ -162,8 +163,8 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
         return;
     }
 
-    std::cout << "Packet captured, payload length = " << payloadSize
-              << " bytes" << std::endl;
+    // std::cout << "Packet captured, payload length = " << payloadSize
+    //           << " bytes" << std::endl;
 
     Md5HashedPayload HashedPayload(payload, payloadSize, true);
 

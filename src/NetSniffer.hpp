@@ -4,6 +4,7 @@
 
 #include <pcap.h>
 #include <exception>
+#include <string>
 #include "CacheStructure.hpp"
 
 
@@ -22,7 +23,6 @@ class NetSniffer {
 private:
     pcap_t *handle;
     pcap_if_t *devInt;
-    const char *devName;
 
     bpf_u_int32 mask;
     bpf_u_int32 net;

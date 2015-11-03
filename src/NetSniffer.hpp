@@ -24,6 +24,7 @@ private:
     pcap_t *handle;
     pcap_if_t *devInt;
 
+    bool onlineCapturing_;
     bpf_u_int32 mask;
     bpf_u_int32 net;
     struct bpf_program compiledFilter;
@@ -42,10 +43,12 @@ public:
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
     void setLoop(int numPkgs = 1) const;
+    void captureAll() const;
+    void clearCache();
     ~NetSniffer();
 
-    int getHitRatePersent() const {
-        return packetCache_.getHitRate() * 100;
+    float getHitRate() const {
+        return packetCache_.getHitRate();
     }
 };
 

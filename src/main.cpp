@@ -15,13 +15,15 @@ int main(int argc, char *argv[]) {
     try {
         NetSniffer *snf = NULL;
         std::string ipFilter;
+        bool online = true;
         if (argc == 1) {
             snf = new NetSniffer(DEV_NAME, PROMICIOUS_MODE, 
                                  TIMEOUT_MS, CACHE_SIZE);
             ipFilter = "dst host " + snf->getIpAddress() + " and ";
             std::cout <<"Your IP address: " << snf->getIpAddress() << std::endl;
         } else {
-            // 1st param - filemane; 2nd - dst IP address
+            online == false;
+            // 1st param - filename; 2nd - dst IP address
             snf = new NetSniffer(argv[1], CACHE_SIZE);
             if (argc >= 3) {
                 ipFilter = "dst host ";
@@ -36,8 +38,12 @@ int main(int argc, char *argv[]) {
         filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)";
 
         snf->setFilter(filterText);
-        snf->setLoop(NUMBER_OF_PACKAGES);
-        std::cout << "Hit rate: " << snf->getHitRatePersent() <<"%" << std::endl;
+        if (online) {
+            snf->setLoop(NUMBER_OF_PACKAGES);
+        } else {
+            snf->captureAll();
+        }
+        std::cout << "Hit rate: " << snf->getHitRate() << std::endl;
 
         delete snf;
     } catch (PcapException &e) {

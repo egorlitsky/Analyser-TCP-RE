@@ -117,13 +117,19 @@ size_t Md5HashedPayload::getHashKey() const {
 
     // 18446744069414584321 == 2**64 - 2**32 + 1
     size_t mod = 18446744069414584321U;
-    // 16777213 == 2**24 - 3
-    size_t multipl = 16777213U;
 
-    for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-        res = (res + (size_t)_hashValue[i] * multipl) % mod;
+    // 4294967291 == 2**32 - 5
+    size_t multipl = 4294967291U;
+
+    for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; i += 4U) {
+        size_t addit = (size_t)_hashValue[i];
+        addit += (size_t)_hashValue[i + 1] << 8;
+        addit += (size_t)_hashValue[i + 2] << 16;
+        addit += (size_t)_hashValue[i + 3] << 24;
+
+        // res = (O(2**64) + O(2**32) * O(2**32)) % O(2**64)
+        res = (res + addit * multipl) % mod;
     }
 
     return res;
 }
-

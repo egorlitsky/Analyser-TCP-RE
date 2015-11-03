@@ -35,6 +35,7 @@ public:
     explicit Cache(size_t cacheSize = 128);
     float getHitRate(void) const;
     void add(Md5HashedPayload const &hPayload);
+    void clear();
     ~Cache();
 };
 

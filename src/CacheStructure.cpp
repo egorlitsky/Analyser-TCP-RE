@@ -6,7 +6,7 @@ Cache::Cache(size_t cacheSize): hits_(0), misses_(0), itMap_(),
 
 
 float Cache::getHitRate() const {
-    return (float)(hits_)/(hits_ + misses_);
+    return (float)(hits_)/((float)(hits_) + misses_);
 }
 
 
@@ -26,8 +26,8 @@ void Cache::add(Md5HashedPayload const &hPayload) {
             itMap_[hashKey] = iter;
         } else {
             ++misses_;
-            return;
         }
+        return;
     }
 
     ++misses_;
@@ -44,6 +44,14 @@ void Cache::add(Md5HashedPayload const &hPayload) {
     }
     cacheIterType iter = cache_.insert(CacheEntry(1, newPayload)).first;
     itMap_[newPayload->getHashKey()] = iter;
+}
+
+void Cache::clear() {
+    itMap_.clear();
+    for (cacheIterType it = cache_.begin(); it != cache_.end(); ++it) {
+        delete it->payload;
+    }
+    cache_.clear();
 }
 
 

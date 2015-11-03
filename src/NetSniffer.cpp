@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <bitset>
 #include <iostream>
+#include <pcap.h>
 #include <stdio.h>
 #include "NetSniffer.hpp"
 #include "Md5HashedPayload.hpp"
@@ -27,7 +28,11 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
                        bool promisModeOn,
                        int timeoutInMs,
                        int cacheSize):
-    devInt(NULL), mask(0), net(0), compiledFilter(), packetCache_(cacheSize)
+    devInt(NULL),
+    mask(0), net(0),
+    compiledFilter(),
+    packetCache_(cacheSize),
+    onlineCapturing_(true)
 {
     std::string devName;
     if (inputDevName.empty()) {
@@ -68,7 +73,11 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 
 
 NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
-    devInt(NULL), mask(0), net(0), compiledFilter(), packetCache_(cacheSize)
+    devInt(NULL),
+    mask(0), net(0),
+    compiledFilter(),
+    packetCache_(cacheSize),
+    onlineCapturing_(false)
 {
     handle = pcap_open_offline(inputSavefile, errBuf);
     if (handle == NULL) {
@@ -98,6 +107,21 @@ void NetSniffer::setLoop(int numPkgs) const {
     if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
         handleErrors("An error have occured during looping");
     }
+}
+
+
+void NetSniffer::captureAll() const {
+    const u_char *packet = NULL;
+    struct pcap_pkthdr header;
+    u_char *params = (u_char*)(&packetCache_);
+
+    while (packet = pcap_next(handle, &header)) {
+        parsePacket(params, &header, packet);
+    }
+}
+
+void NetSniffer::clearCache() {
+    packetCache_.clear();
 }
 
 

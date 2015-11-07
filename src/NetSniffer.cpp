@@ -187,13 +187,13 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
         return;
     }
 
-    // std::cout << "Packet captured, payload length = " << payloadSize
-    //           << " bytes" << std::endl;
-
-    Md5HashedPayload HashedPayload(payload, payloadSize, true);
+    // std::cout << "Packet captured, payload length = "
+    //           << payloadSize << " bytes." << std::endl;
 
     void *vPtr = (void*)args;
     Cache *cache = (Cache*)vPtr;
+   
+    Md5HashedPayload HashedPayload(payload, payloadSize, true);
     cache->add(HashedPayload);
 
     return;

@@ -5,7 +5,7 @@
 
 //TODO: бывает еще, например, eth => командная строка
 const char *DEV_NAME = "wlan0";
-const int NUMBER_OF_PACKAGES  = 512;
+const int NUMBER_OF_PACKAGES  = 768;
 const bool PROMICIOUS_MODE  = false;
 const int TIMEOUT_MS  = 100;
 const int CACHE_SIZE  = 256;

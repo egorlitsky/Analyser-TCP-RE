@@ -1,6 +1,5 @@
 #include "CacheStructure.hpp"
 
-
 Cache::Cache(size_t cacheSize): hits_(0), misses_(0), itMap_(),
                                 cache_(), maxSize_(cacheSize), size_(0) {}
 

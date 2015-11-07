@@ -1,9 +1,17 @@
 #include "Md5HashedPayload.hpp"
 #include <openssl/md5.h>
 
+// #include <ctime>
+// #include <iostream>
+// #include <sys/time.h>
+
+
 
 Md5HashedPayload::Md5HashedPayload(unsigned char const *payload, 
                                    unsigned int size, bool isTemp) {
+    // struct timeval tv1, tv2;
+    // gettimeofday(&tv1, NULL);
+
     _payloadSize = size;
     _isTemp = isTemp;
 
@@ -20,6 +28,10 @@ Md5HashedPayload::Md5HashedPayload(unsigned char const *payload,
     _hashValue = new unsigned char[MD5_DIGEST_LENGTH];
     MD5(_payload, (long)_payloadSize, _hashValue);
 
+    // gettimeofday(&tv2, NULL);
+    // unsigned long d = 1000000UL * (tv2.tv_sec - tv1.tv_sec);
+    // d += (tv2.tv_usec - tv1.tv_usec);
+    // std::cout << "Time to pack this packet, in mks: " << d << std::endl;
 }
 
 

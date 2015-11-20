@@ -64,26 +64,7 @@ Md5HashedPayload::~Md5HashedPayload() {
 
 Md5HashedPayload &Md5HashedPayload::operator=(
         Md5HashedPayload const &HashedPayload) {
-    if (this != &HashedPayload) {      
-/*
-        delete [] _payload;
-        delete [] _hashValue;
-
-        unsigned int size = HashedPayload._payloadSize;
-        _isTemp = false;
-        _payloadSize = size;
-
-        unsigned char *copyPayload = new unsigned char[size];
-        for (unsigned int i = 0; i < size; ++i) {
-            copyPayload[i] = HashedPayload._payload[i];
-        }
-        _payload = copyPayload;
-
-        _hashValue = new unsigned char[MD5_DIGEST_LENGTH];
-        for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-            _hashValue[i] = HashedPayload._hashValue[i];
-        }
-*/
+    if (this != &HashedPayload) {
         Md5HashedPayload(HashedPayload).swap(*this);
     }
     return (*this);
@@ -124,24 +105,29 @@ bool Md5HashedPayload::swap(Md5HashedPayload &otherPayload) {
 }
 
 
-size_t Md5HashedPayload::getHashKey() const {
-    size_t res = 0;
+std::size_t Md5HashedPayload::getHashKey(void) const {
+    std::size_t res = 0;
 
     // 18446744069414584321 == 2**64 - 2**32 + 1
-    size_t mod = 18446744069414584321U;
+    std::size_t mod = 18446744069414584321U;
 
     // 4294967291 == 2**32 - 5
-    size_t multipl = 4294967291U;
+    std::size_t multipl = 4294967291U;
 
     for (unsigned int i = 0; i < MD5_DIGEST_LENGTH; i += 4U) {
-        size_t addit = (size_t)_hashValue[i];
-        addit += (size_t)_hashValue[i + 1] << 8;
-        addit += (size_t)_hashValue[i + 2] << 16;
-        addit += (size_t)_hashValue[i + 3] << 24;
+        std::size_t addit = (size_t)_hashValue[i];
+        addit += (std::size_t)_hashValue[i + 1] << 8;
+        addit += (std::size_t)_hashValue[i + 2] << 16;
+        addit += (std::size_t)_hashValue[i + 3] << 24;
 
         // res = (O(2**64) + O(2**32) * O(2**32)) % O(2**64)
         res = (res + addit * multipl) % mod;
     }
 
     return res;
+}
+
+
+std::int64_t Md5HashedPayload::getSize(void) const {
+    return _payloadSize;
 }

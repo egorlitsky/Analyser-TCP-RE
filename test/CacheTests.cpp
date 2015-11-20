@@ -10,6 +10,13 @@ void testSmallCache::TearDown() {
     delete cache;
 }
 
+void testTinyCache::SetUp() {
+    cache = new Cache(cacheSize);
+}
+void testTinyCache::TearDown() {
+    delete cache;
+}
+
 void testCacheFromFile::SetUp() {
     cache = new Cache(cacheSize);
     snf = new NetSniffer("./captures/5timesStackoverflow.pcap", cache);
@@ -23,24 +30,64 @@ void testCacheFromFile::TearDown() {
 }
 
 
+TEST_F(testTinyCache, replacePacket) {
+    std::int64_t size = testTinyCache::cacheSize;
+    unsigned char *val1 = new unsigned char[size / 2];
+    val1[1] = 1U;
+    val1[2] = 2U;
+    val1[3] = 2U;
+    cache->add(Md5HashedPayload(val1, size / 2));
+    cache->add(Md5HashedPayload(val1, size / 2));
+
+    unsigned char *val2 = new unsigned char[size / 4];
+    val2[1] = 2U;
+    val2[2] = 3U;
+    val2[3] = 3U;
+    cache->add(Md5HashedPayload(val2, size / 4));
+
+    unsigned char *val3 = new unsigned char[size / 4];
+    val3[1] = 3U;
+    val3[2] = 4U;
+    val3[3] = 4U;
+    cache->add(Md5HashedPayload(val3, size / 4));
+
+    ASSERT_EQ(size, cache->getSize());
+
+    unsigned char *val4 = new unsigned char[size / 4 + 1];
+    val4[1] = 4U;
+    val4[2] = 5U;
+    val4[3] = 5U;
+    cache->add(Md5HashedPayload(val4, size / 4 + 1));
+
+    ASSERT_EQ(size/2 + size/4 + 1, cache->getSize());
+
+    delete val1;
+    delete val2;
+    delete val3;
+    delete val4;
+}
+
 
 TEST_F(testSmallCache, samePacket) {
-    for (unsigned char i = 0; i < testSmallCache::cacheSize; ++i) {
+    unsigned char packetNumber = 128;
+    for (unsigned char i = 0; i < packetNumber; ++i) {
         unsigned char *nextVal = new unsigned char[128];
-        for (size_t p = 0; p < 128; ++p) {
+        for (std::size_t p = 0; p < 128; ++p) {
             nextVal[p] = 1U;
         }
-        cache->add(Md5HashedPayload(nextVal, 128));
 
+        cache->add(Md5HashedPayload(nextVal, 128));
         delete [] nextVal;
     }
-    float n = testSmallCache::cacheSize;
+    float n = packetNumber;
     ASSERT_FLOAT_EQ((n - 1)/n, cache->getHitRate());
+    ASSERT_EQ(128, cache->getSize());
 }
 
 
 TEST_F(testSmallCache, diffPackets) {
-    for (unsigned char i = 1U; i <= testSmallCache::cacheSize; ++i) {
+    unsigned char packetNumber = 128;
+    for (unsigned char i = 1U; i <= packetNumber; ++i) {
         unsigned char *nextVal = new unsigned char[128];
         for (size_t p = 0; p < 128; ++p) {
             nextVal[p] = 1U;
@@ -48,32 +95,34 @@ TEST_F(testSmallCache, diffPackets) {
         nextVal[63] = i * 2U;
 
         cache->add(Md5HashedPayload(nextVal, 128));
-
         delete [] nextVal;
     }
     ASSERT_FLOAT_EQ(0.0, cache->getHitRate());
+    ASSERT_EQ(128 * packetNumber, cache->getSize());
 }
 
 
 TEST_F(testSmallCache, repeatedDiffPackets) {
-    unsigned char *values[testSmallCache::cacheSize];
+    unsigned char packetNumber = 128;
+    unsigned char *values[packetNumber];
 
-    for (size_t i = 0; i < testSmallCache::cacheSize; ++i) {
+    for (size_t i = 0; i < packetNumber; ++i) {
         unsigned char *nextVal = new unsigned char[128];
         values[i] = nextVal;
-        for (size_t p = 0; p < 128; ++p) {
+        for (std::size_t p = 0; p < 128; ++p) {
             nextVal[p] = std::rand() % 256U;
         }
 
         cache->add(Md5HashedPayload(nextVal, 128));
     }
     
-    for (size_t i = 0; i < testSmallCache::cacheSize; ++i) {
+    for (size_t i = 0; i < packetNumber; ++i) {
         cache->add(Md5HashedPayload(values[i], 128));
         delete [] values[i];
     }
 
     ASSERT_FLOAT_EQ(1.0/2, cache->getHitRate());
+    ASSERT_EQ(128 * packetNumber, cache->getSize());
 }
 
 

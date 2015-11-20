@@ -1,6 +1,6 @@
 #include "CacheStructure.hpp"
 
-Cache::Cache(size_t cacheSize): hits_(0), misses_(0), itMap_(),
+Cache::Cache(std::int64_t cacheSize): hits_(0), misses_(0), itMap_(),
                                 cache_(), maxSize_(cacheSize), size_(0) {}
 
 
@@ -10,7 +10,7 @@ float Cache::getHitRate() const {
 
 
 void Cache::add(Md5HashedPayload const &hPayload) {
-    size_t hashKey = hPayload.getHashKey();
+    std::size_t hashKey = hPayload.getHashKey();
 
     if (itMap_.count(hashKey)) {
         cacheIterType cacheIter = itMap_[hashKey];
@@ -31,19 +31,26 @@ void Cache::add(Md5HashedPayload const &hPayload) {
 
     ++misses_;
     Md5HashedPayload *newPayload = new Md5HashedPayload(hPayload);
-    if (size_ == maxSize_) {
+    std::int64_t requiredSize = newPayload->getSize();
+    while (maxSize_ - size_ < requiredSize) {
         cacheIterType iterToLfuElement = cache_.begin();
         Md5HashedPayload *lfuPayload = iterToLfuElement->payload;
 
+        size_ -= lfuPayload->getSize();
         itMap_.erase(lfuPayload->getHashKey());
         delete lfuPayload;
         cache_.erase(iterToLfuElement);
-    } else {
-        ++size_;
     }
+
     cacheIterType iter = cache_.insert(CacheEntry(1, newPayload)).first;
     itMap_[newPayload->getHashKey()] = iter;
+    size_ += requiredSize;
 }
+
+std::int64_t Cache::getSize(void) const {
+    return size_;
+}
+
 
 void Cache::clear() {
     itMap_.clear();

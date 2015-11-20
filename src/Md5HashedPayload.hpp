@@ -3,6 +3,7 @@
 
 
 #include <algorithm>
+#include <cstdint>
 
 
 class Md5HashedPayload {
@@ -22,7 +23,8 @@ public:
 
     // swaps only non-temporary payloads
     bool swap(Md5HashedPayload &otherPayload);
-    size_t getHashKey() const;
+    std::size_t getHashKey(void) const;
+    std::int64_t getSize(void) const;
 };
 
 

@@ -16,9 +16,9 @@ int main(int argc, char **argv) {
 
         TCLAP::CmdLine cmd("Description message", ' ', "0.9");
 
-        TCLAP::ValueArg<size_t> cacheSizeArg("", "cache_size",
+        TCLAP::ValueArg<std::int64_t> cacheSizeArg("", "cache_size",
                                           "Sets size of cache (in packets)",
-                                          false, 256, "cache size");
+                                          false, 256, "cache size, in KB");
 
         TCLAP::ValueArg<std::string> ipAddrArg(
                         "", "ip_addr", "Sets ip address of destination", false,
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
 
         bool isOnline = devArg.isSet();
-        std::size_t cacheSize = cacheSizeArg.getValue();
+        std::int64_t cacheSize = cacheSizeArg.getValue() * 1024;
 
         std::string ipAddr = ipAddrArg.getValue();
         std::string ipFilter = "";

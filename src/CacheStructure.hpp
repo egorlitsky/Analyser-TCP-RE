@@ -12,8 +12,10 @@ class Cache {
 private:
     int hits_;
     int misses_;
-    std::size_t maxSize_;
-    std::size_t size_;
+
+    // sizes in bytes
+    std::int64_t maxSize_;
+    std::int64_t size_;
 
     struct CacheEntry {
         int freq;
@@ -32,7 +34,8 @@ private:
     std::unordered_map <size_t, cacheIterType> itMap_;
 
 public:
-    explicit Cache(size_t cacheSize);
+    explicit Cache(std::int64_t cacheSize);
+    std::int64_t getSize(void) const;
     float getHitRate(void) const;
     void add(Md5HashedPayload const &hPayload);
     void clear();

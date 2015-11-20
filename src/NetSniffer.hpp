@@ -15,7 +15,7 @@ private:
 public:
     PcapException(const std::string &errMsg);
     virtual const char * what() const throw();
-    ~PcapException() throw();   
+    ~PcapException() throw();
 };
 
 
@@ -25,9 +25,7 @@ private:
     pcap_if_t *devInt;
 
     bool onlineCapturing_;
-    bpf_u_int32 mask;
-    bpf_u_int32 net;
-    struct bpf_program compiledFilter;
+    struct bpf_program *compiledFilter;
 
     char errBuf[PCAP_ERRBUF_SIZE];
     Cache packetCache_;

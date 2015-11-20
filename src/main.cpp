@@ -6,13 +6,9 @@
 #include "Md5HashedPayload.hpp"
 
 
-//TODO: бывает еще, например, eth => командная строка
-//const char *DEV_NAME = "wlan0";
 const int NUMBER_OF_PACKAGES  = 768;
 const bool PROMICIOUS_MODE  = false;
 const int TIMEOUT_MS  = 100;
-//const int CACHE_SIZE  = 256;
-
 
 
 int main(int argc, char **argv) {
@@ -20,13 +16,13 @@ int main(int argc, char **argv) {
 
         TCLAP::CmdLine cmd("Description message", ' ', "0.9");
 
-        TCLAP::ValueArg<size_t> cacheSizeArg("s", "size",
+        TCLAP::ValueArg<size_t> cacheSizeArg("", "cache_size",
                                           "Sets size of cache (in packets)",
-                                          false, 256, "positive number");
+                                          false, 256, "cache size");
 
         TCLAP::ValueArg<std::string> ipAddrArg(
                         "", "ip_addr", "Sets ip address of destination", false,
-                        "", "4 numbers in [0..255] divided by \'.\'"
+                        "", "ip address of destination"
                         );
 
         TCLAP::ValueArg<std::string> devArg("d", "device",
@@ -60,9 +56,6 @@ int main(int argc, char **argv) {
             std::string devName = devArg.getValue();
             snf = new NetSniffer(devName, PROMICIOUS_MODE,
                                  TIMEOUT_MS, cacheSize);
-            if (ipAddr != "") {
-                std::cout << "Your IP address: " << ipAddr << std::endl;
-            }
             snf->setFilter(filterText);
             snf->setLoop(NUMBER_OF_PACKAGES);
         } else {

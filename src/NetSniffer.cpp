@@ -13,6 +13,10 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
 
 
 std::string NetSniffer::getIpAddress(void) const {
+    if (devInt == NULL) {
+        handleErrors("No device interface to capture");
+    }
+
     for (pcap_addr_t *addresses = devInt->addresses; addresses != NULL;
         addresses = addresses->next) {
 
@@ -20,7 +24,8 @@ std::string NetSniffer::getIpAddress(void) const {
             return std::string(inet_ntoa(((struct sockaddr_in*)addresses->addr)->sin_addr));
         }
     }
-//  std::string str = "No AF_INET interfaces have been found";
+
+    handleErrors( "No AF_INET interfaces have been found");
 }
 
 
@@ -29,8 +34,7 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
                        int timeoutInMs,
                        int cacheSize):
     devInt(NULL),
-    mask(0), net(0),
-    compiledFilter(),
+    compiledFilter(NULL),
     packetCache_(cacheSize),
     onlineCapturing_(true)
 {
@@ -49,15 +53,8 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
     handle = pcap_open_live(devName.c_str(), BUFSIZ, promisModeOn,
                             timeoutInMs, errBuf);
     if (handle == NULL) {
-        handleErrors("Couldn't open device");
+        handleErrors("Couldn't open device named " + devName);
     }
-
-    if (pcap_lookupnet(devName.c_str(), &net, &mask, errBuf) == -1) {
-        handleErrors("Can't get netmask for device");
-        net = 0;
-        mask = 0;
-    }
-
 
     pcap_if_t *allDevs;
     if(pcap_findalldevs(&allDevs, errBuf)) {
@@ -74,8 +71,7 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 
 NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
     devInt(NULL),
-    mask(0), net(0),
-    compiledFilter(),
+    compiledFilter(NULL),
     packetCache_(cacheSize),
     onlineCapturing_(false)
 {
@@ -87,14 +83,23 @@ NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
 
 
 void NetSniffer::setFilter(std::string const &filterText) {
+    if (handle == NULL) {
+        handleErrors("No handle set");
+    }
+
+    if (compiledFilter == NULL) {
+        compiledFilter = new bpf_program();
+    } else {
+        pcap_freecode(compiledFilter);
+    }
     const char *filterExp = filterText.c_str();
-    if (pcap_compile(handle, &compiledFilter, filterExp, 0, net) == -1) {
+    if (pcap_compile(handle, compiledFilter, filterExp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         std::string ErrorMsg = "Couldn't parse filter " + filterText;
         ErrorMsg += ": " + std::string(pcap_geterr(handle));
         handleErrors(ErrorMsg);
     }
 
-    if (pcap_setfilter(handle, &compiledFilter) == -1) {
+    if (pcap_setfilter(handle, compiledFilter) == -1) {
         std::string ErrorMsg = "Couldn't set filter " + filterText;
         ErrorMsg += ": " + std::string(pcap_geterr(handle));
         handleErrors(ErrorMsg);
@@ -126,8 +131,12 @@ void NetSniffer::clearCache() {
 
 
 NetSniffer::~NetSniffer() {
-    pcap_freecode(&compiledFilter);
-    pcap_close(handle);
+    if (compiledFilter != NULL) {
+        pcap_freecode(compiledFilter);
+    }
+    if (handle != NULL) {
+        pcap_close(handle);
+    }
 }
 
 

@@ -16,6 +16,7 @@ protected:
     static const size_t cacheSize = 256;
     std::string filterText;
     NetSniffer *snf;
+    Cache *cache;
     void SetUp();
     void TearDown();
 };

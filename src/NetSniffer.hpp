@@ -28,26 +28,23 @@ private:
     struct bpf_program *compiledFilter;
 
     char errBuf[PCAP_ERRBUF_SIZE];
-    Cache packetCache_;
+    Cache *packetCache_;
 
     void handleErrors(const std::string &descrMsg) const {
         throw PcapException(descrMsg);
     }
 public:
     NetSniffer(std::string const &inputDevName, bool promisModeOn,
-        int timeoutInMs, int cacheSize);
-    NetSniffer(const char *inputSavefile, int cacheSize);
+        int timeoutInMs, Cache *cache);
+    NetSniffer(const char *inputSavefile, Cache *cache);
 
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
     void setLoop(int numPkgs = 1) const;
     void captureAll() const;
-    void clearCache();
     ~NetSniffer();
-
-    float getHitRate() const {
-        return packetCache_.getHitRate();
-    }
+    void setCache(Cache *c_);
+    Cache *getCache(void);
 };
 
 

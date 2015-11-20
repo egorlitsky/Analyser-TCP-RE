@@ -32,7 +32,7 @@ private:
     std::unordered_map <size_t, cacheIterType> itMap_;
 
 public:
-    explicit Cache(size_t cacheSize = 128);
+    explicit Cache(size_t cacheSize);
     float getHitRate(void) const;
     void add(Md5HashedPayload const &hPayload);
     void clear();

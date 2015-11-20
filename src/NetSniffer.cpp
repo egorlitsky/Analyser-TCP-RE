@@ -32,10 +32,10 @@ std::string NetSniffer::getIpAddress(void) const {
 NetSniffer::NetSniffer(std::string const &inputDevName,
                        bool promisModeOn,
                        int timeoutInMs,
-                       int cacheSize):
+                       Cache *cache):
     devInt(NULL),
     compiledFilter(NULL),
-    packetCache_(cacheSize),
+    packetCache_(cache),
     onlineCapturing_(true)
 {
     std::string devName;
@@ -69,10 +69,10 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 }
 
 
-NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
+NetSniffer::NetSniffer(const char *inputSavefile, Cache *cache):
     devInt(NULL),
     compiledFilter(NULL),
-    packetCache_(cacheSize),
+    packetCache_(cache),
     onlineCapturing_(false)
 {
     handle = pcap_open_offline(inputSavefile, errBuf);
@@ -84,7 +84,7 @@ NetSniffer::NetSniffer(const char *inputSavefile, int cacheSize):
 
 void NetSniffer::setFilter(std::string const &filterText) {
     if (handle == NULL) {
-        handleErrors("No handle set");
+        handleErrors("No handle is set");
     }
 
     if (compiledFilter == NULL) {
@@ -108,7 +108,11 @@ void NetSniffer::setFilter(std::string const &filterText) {
 
 
 void NetSniffer::setLoop(int numPkgs) const {
-    u_char *params = (u_char*)(&packetCache_);
+    if (packetCache_ == NULL) {
+        handleErrors("No cache to store info!");
+    }
+    u_char *params = (u_char*)(packetCache_);
+
     if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
         handleErrors("An error have occured during looping");
     }
@@ -118,15 +122,25 @@ void NetSniffer::setLoop(int numPkgs) const {
 void NetSniffer::captureAll() const {
     const u_char *packet = NULL;
     struct pcap_pkthdr header;
-    u_char *params = (u_char*)(&packetCache_);
+
+    if (packetCache_ == NULL) {
+        handleErrors("No cache to store info!");
+    }
+    u_char *params = (u_char*)(packetCache_);
 
     while (packet = pcap_next(handle, &header)) {
         parsePacket(params, &header, packet);
     }
 }
 
-void NetSniffer::clearCache() {
-    packetCache_.clear();
+// initializers (?)
+void NetSniffer::setCache(Cache *cache) {
+    packetCache_ = cache;
+}
+
+
+Cache *NetSniffer::getCache(void) {
+    return packetCache_;
 }
 
 

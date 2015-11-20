@@ -51,23 +51,28 @@ int main(int argc, char **argv) {
         filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)";
 
         NetSniffer *snf = NULL;
+        Cache *cache = new Cache(cacheSize);
 
         if (isOnline) {
             std::string devName = devArg.getValue();
             snf = new NetSniffer(devName, PROMICIOUS_MODE,
-                                 TIMEOUT_MS, cacheSize);
+                                 TIMEOUT_MS, cache);
             snf->setFilter(filterText);
             snf->setLoop(NUMBER_OF_PACKAGES);
+            delete snf;
         } else {
             std::vector<std::string> filenames = filenamesArg.getValue();
-            snf = new NetSniffer(filenames[0].c_str(), cacheSize);
-            snf->setFilter(filterText);
-            snf->captureAll();
+            // for (auto filename in filenames) {} (?)
+            for (std::size_t i = 0; i < filenames.size(); ++i) {
+                snf = new NetSniffer(filenames[i].c_str(), cache);
+                snf->setFilter(filterText);
+                snf->captureAll();
+                delete snf;
+            }
         }
 
-        std::cout << "Hit rate: " << snf->getHitRate() << std::endl;
-        delete snf;
-
+        std::cout << "Hit rate: " << cache->getHitRate() << std::endl;
+        delete cache;
 /*
         NetSniffer *snf = NULL;
         std::string ipFilter;

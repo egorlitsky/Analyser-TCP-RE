@@ -11,13 +11,15 @@ void testSmallCache::TearDown() {
 }
 
 void testCacheFromFile::SetUp() {
-    snf = new NetSniffer("./captures/5timesStackoverflow.pcap", cacheSize);
+    cache = new Cache(cacheSize);
+    snf = new NetSniffer("./captures/5timesStackoverflow.pcap", cache);
     filterText = "tcp port 80 and dst host 192.168.1.9 and ";
     filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)";
     snf->setFilter(filterText);
 }
 void testCacheFromFile::TearDown() {
     delete snf;
+    delete cache;
 }
 
 
@@ -77,14 +79,17 @@ TEST_F(testSmallCache, repeatedDiffPackets) {
 
 TEST_F(testCacheFromFile, twoTimesSameStream) {
     snf->captureAll();
-    float firstHitRate = snf->getHitRate();
+    float firstHitRate = cache->getHitRate();
 
-    NetSniffer *snf2 = new NetSniffer("./captures/5timesStackoverflow.pcap", cacheSize);
+    Cache *cache2 = new Cache(cacheSize);
+    NetSniffer *snf2 = new NetSniffer("./captures/5timesStackoverflow.pcap",
+                                      cache2);
     snf2->setFilter(filterText);
     snf2->captureAll();
-    float secHitRate = snf2->getHitRate();
+    float secHitRate = cache2->getHitRate();
 
     ASSERT_FLOAT_EQ(firstHitRate, secHitRate);
 
     delete snf2;
+    delete cache2;
 }

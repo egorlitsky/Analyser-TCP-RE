@@ -3,9 +3,10 @@
 
 
 #include <algorithm>
-#include <cstdint>
+#include <vector>
 
 
+// TODO: discuss vector using?
 class Md5HashedPayload {
 private:
     unsigned int _payloadSize;
@@ -16,6 +17,7 @@ private:
 public:
     Md5HashedPayload(unsigned char const *payload, unsigned int size, 
                      bool isTemp = false);
+    // Md5HashedPayload(std::vector<unsigned char> &v, bool isTemp = false);
     Md5HashedPayload(Md5HashedPayload const &HashedPayload);
     ~Md5HashedPayload();
     Md5HashedPayload &operator=(Md5HashedPayload const &HashedPayload);
@@ -24,7 +26,7 @@ public:
     // swaps only non-temporary payloads
     bool swap(Md5HashedPayload &otherPayload);
     std::size_t getHashKey(void) const;
-    std::int64_t getSize(void) const;
+    std::size_t getSize(void) const;
 };
 
 

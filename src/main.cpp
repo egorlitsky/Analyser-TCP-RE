@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,8 +17,8 @@ int main(int argc, char **argv) {
 
         TCLAP::CmdLine cmd("Description message", ' ', "0.9");
 
-        TCLAP::ValueArg<std::int64_t> cacheSizeArg("", "cache_size",
-                                          "Sets size of cache (in packets)",
+        TCLAP::ValueArg<std::size_t> cacheSizeArg("", "cache_size",
+                                          "Sets size of cache",
                                           false, 256, "cache size, in KB");
 
         TCLAP::ValueArg<std::string> ipAddrArg(
@@ -33,30 +34,40 @@ int main(int argc, char **argv) {
                             true, "filenames"
                             );
 
+        TCLAP::ValueArg<std::string> outputArg("o", "output_file",
+                                               "Sets file to write info",
+                                               false, "", "output filename");
+
         cmd.add(cacheSizeArg);
         cmd.add(ipAddrArg);
         cmd.xorAdd(devArg, filenamesArg);
+        cmd.add(outputArg);
         cmd.parse(argc, argv);
 
 
         bool isOnline = devArg.isSet();
-        std::int64_t cacheSize = cacheSizeArg.getValue() * 1024;
+        std::size_t cacheSize = cacheSizeArg.getValue() * 1024;
 
         std::string ipAddr = ipAddrArg.getValue();
         std::string ipFilter = "";
         if (ipAddr != "") {
             ipFilter = "dst host " + ipAddr + " and ";
         }
-        std::string filterText = "tcp port 80 and " + ipFilter;
+        std::string filterText = "tcp and " + ipFilter;
         filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)";
 
         NetSniffer *snf = NULL;
-        Cache *cache = new Cache(cacheSize);
+        Cache cache(cacheSize);
+
+        std::string output = outputArg.getValue();
+        if (output != "") {
+            freopen(output.c_str(), "w", stdout);
+        }
 
         if (isOnline) {
             std::string devName = devArg.getValue();
             snf = new NetSniffer(devName, PROMICIOUS_MODE,
-                                 TIMEOUT_MS, cache);
+                                 TIMEOUT_MS, &cache);
             snf->setFilter(filterText);
             snf->setLoop(NUMBER_OF_PACKAGES);
             delete snf;
@@ -64,50 +75,15 @@ int main(int argc, char **argv) {
             std::vector<std::string> filenames = filenamesArg.getValue();
             // for (auto filename in filenames) {} (?)
             for (std::size_t i = 0; i < filenames.size(); ++i) {
-                snf = new NetSniffer(filenames[i].c_str(), cache);
+                snf = new NetSniffer(filenames[i].c_str(), &cache);
                 snf->setFilter(filterText);
                 snf->captureAll();
                 delete snf;
             }
         }
 
-        std::cout << "Hit rate: " << cache->getHitRate() << std::endl;
-        delete cache;
-/*
-        NetSniffer *snf = NULL;
-        std::string ipFilter;
-        bool online = true;
+        std::cout << "Hit rate: " << cache.getHitRate() << std::endl;
 
-        if (argc == 1) {
-            snf = new NetSniffer(DEV_NAME, PROMICIOUS_MODE, 
-                                 TIMEOUT_MS, CACHE_SIZE);
-            ipFilter = "dst host " + snf->getIpAddress() + " and ";
-            std::cout <<"Your IP address: " << snf->getIpAddress() << std::endl;
-        } else {
-            online == false;
-            // 1st param - filename; 2nd - dst IP address
-            snf = new NetSniffer(argv[1], CACHE_SIZE);
-            if (argc >= 3) {
-                ipFilter = "dst host ";
-                ipFilter += argv[2]; 
-                ipFilter += " and ";
-            } else {
-                ipFilter = "";
-            }
-        }
-
-        std::string filterText = "tcp port 80 and " + ipFilter;
-        filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)";
-
-        snf->setFilter(filterText);
-        if (online) {
-            snf->setLoop(NUMBER_OF_PACKAGES);
-        } else {
-            snf->captureAll();
-        }
-        std::cout << "Hit rate: " << snf->getHitRate() << std::endl;
-        delete snf;
-*/
     } catch (PcapException &e) {
         std::cout << e.what();
     } catch (TCLAP::ArgException &e) {

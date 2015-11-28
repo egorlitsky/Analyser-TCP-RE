@@ -10,12 +10,12 @@
 
 class Cache {
 private:
-    int hits_;
-    int misses_;
+    int _hits;
+    int _misses;
 
     // sizes in bytes
-    std::int64_t maxSize_;
-    std::int64_t size_;
+    std::size_t _maxSize;
+    std::size_t _size;
 
     struct CacheEntry {
         int freq;
@@ -29,13 +29,13 @@ private:
 
     typedef std::set<CacheEntry>::iterator cacheIterType;
 
-    std::set<CacheEntry> cache_;
+    std::set<CacheEntry> _cache;
     // TODO: think about multiset to resolve collisions
-    std::unordered_map <size_t, cacheIterType> itMap_;
+    std::unordered_map <size_t, cacheIterType> _itMap;
 
 public:
-    explicit Cache(std::int64_t cacheSize);
-    std::int64_t getSize(void) const;
+    explicit Cache(std::size_t cacheSize);
+    std::size_t getSize(void) const;
     float getHitRate(void) const;
     void add(Md5HashedPayload const &hPayload);
     void clear();

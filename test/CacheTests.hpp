@@ -4,28 +4,24 @@
 
 class testSmallCache : public ::testing::Test {
 protected:
-    static const std::int64_t cacheSize = 128 * 1024;
-    Cache *cache;
-    void SetUp();
-    void TearDown();
+    const std::size_t cacheSize = 128 * 1024;
+    Cache cache = Cache(cacheSize);
 };
 
 
 class testTinyCache : public ::testing::Test {
 protected:
-    static const std::int64_t cacheSize = 128;
-    Cache *cache;
-    void SetUp();
-    void TearDown();
+    const std::size_t cacheSize = 128;
+    Cache cache = Cache(cacheSize);
 };
 
 
 class testCacheFromFile : public ::testing::Test {
 protected:
-    static const std::int64_t cacheSize = 256 * 1024;
+    const std::size_t cacheSize = 256 * 1024;
     std::string filterText;
     NetSniffer *snf;
-    Cache *cache;
+    Cache cache = Cache(cacheSize);
     void SetUp();
     void TearDown();
 };

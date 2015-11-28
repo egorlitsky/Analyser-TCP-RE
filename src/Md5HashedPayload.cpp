@@ -1,5 +1,5 @@
-#include "Md5HashedPayload.hpp"
 #include <openssl/md5.h>
+#include "Md5HashedPayload.hpp"
 
 // #include <ctime>
 // #include <iostream>
@@ -8,14 +8,15 @@
 
 
 Md5HashedPayload::Md5HashedPayload(unsigned char const *payload, 
-                                   unsigned int size, bool isTemp) {
+                                   unsigned int size, bool isTemp)
+{
     // struct timeval tv1, tv2;
     // gettimeofday(&tv1, NULL);
 
     _payloadSize = size;
     _isTemp = isTemp;
 
-    if (!isTemp) {
+    if (!_isTemp) {
         unsigned char *copyPayload = new unsigned char[size];
         for (unsigned int i = 0; i < size; ++i) {
             copyPayload[i] = payload[i];
@@ -34,6 +35,15 @@ Md5HashedPayload::Md5HashedPayload(unsigned char const *payload,
     // std::cout << "Time to pack this packet, in mks: " << d << std::endl;
 }
 
+/*
+Md5HashedPayload::Md5HashedPayload(std::vector<unsigned char> &v,
+                                   bool isTemp)
+{
+    _payloadSize = v.size();
+    _is_temp = isTemp;
+    // ...
+}
+*/
 
 Md5HashedPayload::Md5HashedPayload(Md5HashedPayload const &HashedPayload) {
     unsigned int size = HashedPayload._payloadSize;
@@ -128,6 +138,6 @@ std::size_t Md5HashedPayload::getHashKey(void) const {
 }
 
 
-std::int64_t Md5HashedPayload::getSize(void) const {
+std::size_t Md5HashedPayload::getSize(void) const {
     return _payloadSize;
 }

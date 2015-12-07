@@ -6,7 +6,6 @@
 #include <vector>
 
 
-// TODO: discuss vector using?
 class Md5HashedPayload {
 private:
     unsigned int _payloadSize;

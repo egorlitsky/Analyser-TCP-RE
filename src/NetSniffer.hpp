@@ -2,9 +2,10 @@
 #define NETSNIFFER_HPP
 
 
-#include <pcap.h>
+#include <cstdint>
 #include <exception>
 #include <string>
+#include <pcap.h>
 #include "CacheStructure.hpp"
 
 
@@ -41,7 +42,7 @@ public:
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
     void setLoop(int numPkgs = 1) const;
-    void captureAll() const;
+    std::uint64_t captureAll() const;
     ~NetSniffer();
     void setCache(Cache *c_);
     Cache *getCache(void);

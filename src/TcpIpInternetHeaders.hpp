@@ -3,8 +3,10 @@
 
 #include <arpa/inet.h>
 
+
 #define ETHER_HEADER_SIZE 14
 #define ETHER_ADDR_LEN 6
+
 
 struct sniffEtherHeader {
 		u_char		etherDhost[ETHER_ADDR_LEN];
@@ -54,6 +56,9 @@ struct sniffTcpHeader {
 		u_short		tcpUrp;
 };
 
-#define	TCP_OFF(th)	(((th)->tcpOffRsvd & 0xf0) >> 4) /* number of 32-bit words in TCP header */
+
+/* number of 32-bit words in TCP header */
+#define	TCP_OFF(th)	(((th)->tcpOffRsvd & 0xf0) >> 4)
+
 
 #endif

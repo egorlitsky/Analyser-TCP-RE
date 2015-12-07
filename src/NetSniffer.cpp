@@ -4,8 +4,11 @@
 #include <pcap.h>
 #include <stdio.h>
 #include "NetSniffer.hpp"
-#include "Md5HashedPayload.hpp"
 #include "TcpIpInternetHeaders.hpp"
+
+
+extern long long capturedPacketNumber;
+extern bool withVlan;
 
 
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
@@ -119,7 +122,7 @@ void NetSniffer::setLoop(int numPkgs) const {
 }
 
 
-void NetSniffer::captureAll() const {
+std::uint64_t NetSniffer::captureAll() const {
     const u_char *packet = NULL;
     struct pcap_pkthdr header;
 
@@ -128,12 +131,15 @@ void NetSniffer::captureAll() const {
     }
     u_char *params = (u_char*)(packetCache_);
 
+    std::uint64_t cnt = 0;
     while (packet = pcap_next(handle, &header)) {
         parsePacket(params, &header, packet);
+        cnt += 1;
     }
+    return cnt;
 }
 
-// initializers (?)
+
 void NetSniffer::setCache(Cache *cache) {
     packetCache_ = cache;
 }
@@ -169,6 +175,11 @@ PcapException::~PcapException() throw() {}
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
     const u_char *packet)
 {
+    capturedPacketNumber++;
+    if (capturedPacketNumber % 10000 == 0) {
+        std::cout << "." << std::flush;
+    }
+
     const struct sniffEtherHeader *ethernetHeader;
     const struct sniffIpHeader *ipHeader;
     const struct sniffTcpHeader *tcpHeader;
@@ -179,39 +190,36 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
 
     ethernetHeader = (struct sniffEtherHeader*)(packet);
 
-    ipHeader = (struct sniffIpHeader*)(packet + ETHER_HEADER_SIZE);
+    int ethHeaderLen = ETHER_HEADER_SIZE + (4 * withVlan);
+    ipHeader = (struct sniffIpHeader*)(packet + ethHeaderLen);
     ipSize = IP_HL(ipHeader) * 4;
 
-    //TODO: вызывающий не может узнать о том, что что-то идет не так
     if (ipSize < 20) {
-        std::cout << "Invalid IP header length: " << ipSize
-                << " bytes" << std::endl;
+        // std::cout << "Invalid IP header length: " << ipSize
+        //         << " bytes" << std::endl;
         return;
     }
 
-    tcpHeader = (struct sniffTcpHeader*)(packet + ETHER_HEADER_SIZE + ipSize);
+    tcpHeader = (struct sniffTcpHeader*)(packet + ethHeaderLen + ipSize);
     tcpSize = TCP_OFF(tcpHeader) * 4;
     if (tcpSize < 20) {
-        std::cout << "Invalid TCP header length: " << tcpSize
-                  << " bytes" << std::endl;
+        // std::cout << "Invalid TCP header length: " << tcpSize
+        //           << " bytes" << std::endl;
         return;
     }
 
-    payload = (unsigned char *)(packet + ETHER_HEADER_SIZE + ipSize + tcpSize);
+    payload = (unsigned char *)(packet + ethHeaderLen + ipSize + tcpSize);
     int payloadSize = (int)(ntohs(ipHeader->ipTotLen)) - (int)(ipSize) - (int)(tcpSize);
     if (payloadSize < 0) {
-        std::cout << "Invalid payload length: " << payloadSize 
-                  << " bytes" << std::endl;
+        // std::cout << "Invalid payload length: " << payloadSize 
+        //           << " bytes" << std::endl;
         return;
     }
 
     if (payloadSize == 0) {
-        std::cout << "No payload present" << std::endl;
+        // std::cout << "No payload present" << std::endl;
         return;
     }
-
-    // std::cout << "Packet captured, payload length = "
-    //           << payloadSize << " bytes." << std::endl;
 
     void *vPtr = (void*)args;
     Cache *cache = (Cache*)vPtr;

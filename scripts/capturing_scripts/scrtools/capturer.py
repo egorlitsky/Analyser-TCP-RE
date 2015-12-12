@@ -47,7 +47,7 @@ class Capturer:
         output_file_header = self._dir + "/" + self._tag + "_" + ts
         self._generate_info(output_file_header + ".txt")
 
-        self._clear_browser_cache()
+        # self._clear_browser_cache()
         with tcpdump(output_file_header + ".pcap"):
             self._capture_proc()
 

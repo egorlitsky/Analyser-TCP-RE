@@ -11,6 +11,13 @@ extern long long capturedPacketNumber;
 extern bool withVlan;
 
 
+struct Params {
+    Reporter *rep;
+    Cache *cache;
+    Params(Reporter *r, Cache *c): rep(r), cache(c) {}
+};
+
+
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
     const u_char *packet);
 
@@ -94,6 +101,7 @@ void NetSniffer::setFilter(std::string const &filterText) {
         compiledFilter = new bpf_program();
     } else {
         pcap_freecode(compiledFilter);
+        delete compiledFilter;
     }
     const char *filterExp = filterText.c_str();
     if (pcap_compile(handle, compiledFilter, filterExp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
@@ -110,32 +118,43 @@ void NetSniffer::setFilter(std::string const &filterText) {
 }
 
 
-void NetSniffer::setLoop(int numPkgs) const {
+void NetSniffer::setLoop(Reporter *rep, int numPkgs) const {
     if (packetCache_ == NULL) {
         handleErrors("No cache to store info!");
     }
-    u_char *params = (u_char*)(packetCache_);
+    Params p(rep, packetCache_);
+    u_char *params = (u_char*)(&p);
 
     if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
         handleErrors("An error have occured during looping");
     }
+    
+    if (rep != NULL) {
+        rep->fin();
+    }
 }
 
 
-std::uint64_t NetSniffer::captureAll() const {
+std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
     const u_char *packet = NULL;
     struct pcap_pkthdr header;
 
     if (packetCache_ == NULL) {
         handleErrors("No cache to store info!");
     }
-    u_char *params = (u_char*)(packetCache_);
+    Params p(rep, packetCache_);
+    u_char *params = (u_char*)(&p);
 
     std::uint64_t cnt = 0;
     while (packet = pcap_next(handle, &header)) {
         parsePacket(params, &header, packet);
         cnt += 1;
     }
+
+    if (rep != NULL) {
+        rep->fin();
+    }
+
     return cnt;
 }
 
@@ -153,6 +172,7 @@ Cache *NetSniffer::getCache(void) {
 NetSniffer::~NetSniffer() {
     if (compiledFilter != NULL) {
         pcap_freecode(compiledFilter);
+        delete compiledFilter;
     }
     if (handle != NULL) {
         pcap_close(handle);
@@ -175,11 +195,6 @@ PcapException::~PcapException() throw() {}
 void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
     const u_char *packet)
 {
-    capturedPacketNumber++;
-    if (capturedPacketNumber % 10000 == 0) {
-        std::cout << "." << std::flush;
-    }
-
     const struct sniffEtherHeader *ethernetHeader;
     const struct sniffIpHeader *ipHeader;
     const struct sniffTcpHeader *tcpHeader;
@@ -195,37 +210,30 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
     ipSize = IP_HL(ipHeader) * 4;
 
     if (ipSize < 20) {
-        // std::cout << "Invalid IP header length: " << ipSize
-        //         << " bytes" << std::endl;
         return;
     }
 
     tcpHeader = (struct sniffTcpHeader*)(packet + ethHeaderLen + ipSize);
     tcpSize = TCP_OFF(tcpHeader) * 4;
     if (tcpSize < 20) {
-        // std::cout << "Invalid TCP header length: " << tcpSize
-        //           << " bytes" << std::endl;
         return;
     }
 
     payload = (unsigned char *)(packet + ethHeaderLen + ipSize + tcpSize);
     int payloadSize = (int)(ntohs(ipHeader->ipTotLen)) - (int)(ipSize) - (int)(tcpSize);
-    if (payloadSize < 0) {
-        // std::cout << "Invalid payload length: " << payloadSize 
-        //           << " bytes" << std::endl;
-        return;
-    }
-
-    if (payloadSize == 0) {
-        // std::cout << "No payload present" << std::endl;
+    if (payloadSize <= 0) {
         return;
     }
 
     void *vPtr = (void*)args;
-    Cache *cache = (Cache*)vPtr;
+    Params *p = (Params*)vPtr;
+
+    if (p->rep != NULL) {
+        p->rep->inc();
+    }
    
     Md5HashedPayload HashedPayload(payload, payloadSize, true);
-    cache->add(HashedPayload);
+    p->cache->add(HashedPayload);
 
     return;
 }

@@ -4,7 +4,8 @@ test_name = SnifferTest
 CC = g++
 LD = g++
 
-CC_FLAGS = -std=c++11
+CC_FLAGS = -std=c++11 -g -ggdb
+LD_FLAGS = -g -ggdb
 
 SRC_DIR = src
 TEST_DIR = test
@@ -12,7 +13,7 @@ BUILD_DIR = bin
 
 MK_BUILD_DIR = mkdir -p ./$(BUILD_DIR)
 
-OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/CacheStructure.o
+OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/CacheStructure.o $(BUILD_DIR)/Reporter.o
 OBJS_MAIN = $(BUILD_DIR)/main.o $(OBJS_NSF)
 OBJS_TEST = $(BUILD_DIR)/UnitTests.o $(BUILD_DIR)/CacheTests.o $(OBJS_NSF)
 
@@ -26,12 +27,20 @@ all: $(BUILD_DIR)/$(program_name)
 test: $(BUILD_DIR)/$(test_name)
 
 
+release:
+	make
+	strip -g $(BUILD_DIR)/$(program_name)
+
 $(BUILD_DIR)/$(program_name): $(OBJS_MAIN)
-	$(LD) $^ $(LIB_DEP) -o $@
+	$(LD) $(LD_FLAGS) $^ $(LIB_DEP) -o $@
 
 $(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(SRC_DIR)/NetSniffer.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/main.cpp -o $@
+
+$(BUILD_DIR)/Reporter.o: $(SRC_DIR)/Reporter.cpp $(SRC_DIR)/Reporter.hpp
+	$(MK_BUILD_DIR)
+	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/Reporter.cpp -o $@
 
 $(BUILD_DIR)/Md5HashedPayload.o: $(SRC_DIR)/Md5HashedPayload.cpp $(SRC_DIR)/Md5HashedPayload.hpp
 	$(MK_BUILD_DIR)
@@ -44,7 +53,7 @@ $(BUILD_DIR)/CacheStructure.o: $(SRC_DIR)/CacheStructure.cpp $(SRC_DIR)/CacheStr
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/CacheStructure.cpp -o $@
 
-$(SRC_DIR)/NetSniffer.hpp: $(SRC_DIR)/CacheStructure.hpp
+$(SRC_DIR)/NetSniffer.hpp: $(SRC_DIR)/CacheStructure.hpp $(SRC_DIR)/Reporter.hpp
 
 
 $(SRC_DIR)/NetSniffer.cpp: $(SRC_DIR)/TcpIpInternetHeaders.hpp
@@ -57,7 +66,7 @@ $(BUILD_DIR)/NetSniffer.o: $(SRC_DIR)/NetSniffer.cpp $(SRC_DIR)/NetSniffer.hpp
 
 
 $(BUILD_DIR)/$(test_name): $(OBJS_TEST)
-	$(LD) $^ $(LIB_DEP) $(LIB_TEST) -o $@
+	$(LD) $(LD_FLAGS) $^ $(LIB_DEP) $(LIB_TEST) -o $@
 
 $(TEST_DIR)/CacheTests.hpp: $(SRC_DIR)/NetSniffer.hpp
 

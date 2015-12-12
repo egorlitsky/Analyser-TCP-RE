@@ -1,18 +1,10 @@
 #include <openssl/md5.h>
 #include "Md5HashedPayload.hpp"
 
-// #include <ctime>
-// #include <iostream>
-// #include <sys/time.h>
-
-
 
 Md5HashedPayload::Md5HashedPayload(unsigned char const *payload, 
                                    unsigned int size, bool isTemp)
 {
-    // struct timeval tv1, tv2;
-    // gettimeofday(&tv1, NULL);
-
     _payloadSize = size;
     _isTemp = isTemp;
 
@@ -28,22 +20,24 @@ Md5HashedPayload::Md5HashedPayload(unsigned char const *payload,
 
     _hashValue = new unsigned char[MD5_DIGEST_LENGTH];
     MD5(_payload, (long)_payloadSize, _hashValue);
-
-    // gettimeofday(&tv2, NULL);
-    // unsigned long d = 1000000UL * (tv2.tv_sec - tv1.tv_sec);
-    // d += (tv2.tv_usec - tv1.tv_usec);
-    // std::cout << "Time to pack this packet, in mks: " << d << std::endl;
 }
 
-/*
-Md5HashedPayload::Md5HashedPayload(std::vector<unsigned char> &v,
-                                   bool isTemp)
+
+Md5HashedPayload::Md5HashedPayload(std::vector<unsigned char> &v)
 {
     _payloadSize = v.size();
-    _is_temp = isTemp;
-    // ...
+    _isTemp = false;
+
+    unsigned char *copyPayload = new unsigned char[_payloadSize];
+    for (std::size_t i = 0; i < _payloadSize; ++i) {
+        copyPayload[i] = v[i];
+    }
+    _payload = copyPayload;
+
+    _hashValue = new unsigned char[MD5_DIGEST_LENGTH];
+    MD5(_payload, (long)_payloadSize, _hashValue);
 }
-*/
+
 
 Md5HashedPayload::Md5HashedPayload(Md5HashedPayload const &HashedPayload) {
     unsigned int size = HashedPayload._payloadSize;

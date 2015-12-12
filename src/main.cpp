@@ -6,7 +6,6 @@
 #include <vector>
 #include <tclap/CmdLine.h>
 #include "NetSniffer.hpp"
-#include "Md5HashedPayload.hpp"
 
 
 const bool PROMICIOUS_MODE  = false;
@@ -67,16 +66,16 @@ int main(int argc, char **argv) {
         if (ipAddr != "") {
             ipFilter = "dst host " + ipAddr + " and ";
         }
-        std::string filterText = "tcp and " + ipFilter;
-        filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2))";
-        filterText += " != 0)";
+        std::string filterText = "tcp";
+        // std::string filterText = "tcp and " + ipFilter;
+        // filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2))";
+        // filterText += " != 0)";
 
         withVlan = vlanArg.getValue();
         if (withVlan) {
             filterText = "vlan and " + filterText;
         }
 
-        NetSniffer *snf = NULL;
         Cache cache(cacheSize);
 
         std::streambuf *buf;
@@ -93,16 +92,15 @@ int main(int argc, char **argv) {
 
 
         if (isOnline) {
-            int numberOfPackets = packetNumArg.getValue();
+            int numberOfPackets = packetNumArg.getValue();;
+            Reporter rep(numberOfPackets);
             out << "Online capturing" << std::endl;
             out << "Cache size: " << cacheSize / 1024 << "KB" << std::endl;
 
             std::string devName = devArg.getValue();
-            snf = new NetSniffer(devName, PROMICIOUS_MODE,
-                                 TIMEOUT_MS, &cache);
-            snf->setFilter(filterText);
-            snf->setLoop(numberOfPackets);
-            delete snf;
+            NetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, &cache);
+            snf.setFilter(filterText);
+            snf.setLoop(&rep, numberOfPackets);
             out << "Hit rate: " << cache.getHitRate() << std::endl;
         } else {
             out << "Capturing from files" << std::endl;
@@ -110,30 +108,29 @@ int main(int argc, char **argv) {
 
             std::vector<std::string> filenames = filenamesArg.getValue();
             time_t timer1, timer2;
-            std::uint64_t packet_count = 0;
+            std::uint64_t total_packet_count = 0;
             for (std::size_t i = 0; i < filenames.size(); ++i) {
-                snf = new NetSniffer(filenames[i].c_str(), &cache);
-                snf->setFilter(filterText);
+                NetSniffer snf(filenames[i].c_str(), &cache);
+                snf.setFilter(filterText);
+                Reporter rep(0);
 
                 time(&timer1);
-                packet_count += snf->captureAll();
+                std::uint64_t packet_count = snf.captureAll(&rep);
                 time(&timer2);
 
-                delete snf;
-
-                std::cout << "\rFile analysis completed    " << std::endl;
                 out << std::endl;
                 out << i + 1 << ". After " << filenames[i]
                     << " capturing" << std::endl;
                 out << "   Number of captured packets: " << packet_count
                     << std::endl;
-                out << "   Hit rate: " << cache.getHitRate() << std::endl;
+                out << "   Total hit rate: " << cache.getHitRate() << std::endl;
                 out << "   Accuired time, secs : "
                     << difftime(timer2, timer1) << std::endl;
 
                 capturedPacketNumber = 0;
                 std::cout << std::endl;
             }
+            out <<
         }
 
     } catch (PcapException &e) {

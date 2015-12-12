@@ -7,6 +7,7 @@
 #include <string>
 #include <pcap.h>
 #include "CacheStructure.hpp"
+#include "Reporter.hpp"
 
 
 class PcapException: std::exception {
@@ -41,8 +42,8 @@ public:
 
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
-    void setLoop(int numPkgs = 1) const;
-    std::uint64_t captureAll() const;
+    void setLoop(Reporter *rep, int numPkgs) const;
+    std::uint64_t captureAll(Reporter *rep) const;
     ~NetSniffer();
     void setCache(Cache *c_);
     Cache *getCache(void);

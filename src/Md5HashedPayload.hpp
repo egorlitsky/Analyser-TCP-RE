@@ -16,7 +16,7 @@ private:
 public:
     Md5HashedPayload(unsigned char const *payload, unsigned int size, 
                      bool isTemp = false);
-    // Md5HashedPayload(std::vector<unsigned char> &v, bool isTemp = false);
+    Md5HashedPayload(std::vector<unsigned char> &v);
     Md5HashedPayload(Md5HashedPayload const &HashedPayload);
     ~Md5HashedPayload();
     Md5HashedPayload &operator=(Md5HashedPayload const &HashedPayload);

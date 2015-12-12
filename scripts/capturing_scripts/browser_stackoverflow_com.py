@@ -11,7 +11,7 @@ from time import sleep
 
 
 def capture():
-    driver = webdriver.Chrome(os.path.expanduser("~/chromedriver"))
+    driver = webdriver.Firefox()
     driver.get("http://www.stackoverflow.com")
     xpath = "//div[@id='tabs']/a[@data-value='hot']"
     element = driver.find_element_by_xpath(xpath)

@@ -12,6 +12,7 @@ class Cache {
 private:
     int _hits;
     int _misses;
+    int _collisionsNum;
 
     // sizes in bytes
     std::size_t _maxSize;
@@ -37,6 +38,7 @@ public:
     explicit Cache(std::size_t cacheSize);
     std::size_t getSize(void) const;
     float getHitRate(void) const;
+    int getCollisionsNumber(void) const;
     void add(Md5HashedPayload const &hPayload);
     void clear();
     ~Cache();

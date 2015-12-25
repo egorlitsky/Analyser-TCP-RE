@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-long long capturedPacketNumber = 0;
+
 bool withVlan = false;
 
 

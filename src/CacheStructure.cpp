@@ -1,11 +1,16 @@
 #include "CacheStructure.hpp"
 
-Cache::Cache(std::size_t cacheSize): _hits(0), _misses(0), _itMap(),
-                                _cache(), _maxSize(cacheSize), _size(0) {}
+Cache::Cache(std::size_t cacheSize): _hits(0), _misses(0), _collisionsNum(0),
+                                _itMap(), _cache(), _maxSize(cacheSize),
+                                _size(0) {}
 
 
-float Cache::getHitRate() const {
+float Cache::getHitRate(void) const {
     return (float)(_hits)/((float)(_hits) + _misses);
+}
+
+int Cache::getCollisionsNumber(void) const {
+    return _collisionsNum;
 }
 
 
@@ -21,10 +26,12 @@ void Cache::add(Md5HashedPayload const &hPayload) {
             ++_hits;
             _cache.erase(_itMap[hashKey]);
             cacheIterType iter = _cache.insert(
-                CacheEntry(freq + 1, payload)).first;
+                CacheEntry(freq + 1, payload)
+            ).first;
             _itMap[hashKey] = iter;
         } else {
             ++_misses;
+            ++_collisionsNum;
         }
         return;
     }

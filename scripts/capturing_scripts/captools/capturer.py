@@ -1,16 +1,25 @@
+import datetime
+import functools
 import os
 import shlex
 import shutil
-import subprocess as sub
+import subprocess as subpr
+from captools.drivermanager import (chromium_driver, firefox_driver)
 from contextlib import contextmanager
-import datetime
+
+
+_chromium_info = "Captured with Chromium.\n"
+_firefox_info = "Captured with Firefox.\n"
+
+
+chosen_driver, driver_info = chromium_driver, _chromium_info
 
 
 @contextmanager
 def tcpdump(output_file):
     cmd = "sudo tcpdump -i wlan0 " + "-U -w " + output_file
     args = shlex.split(cmd)
-    proc = sub.Popen(args)
+    proc = subpr.Popen(args)
     try:
         yield
     finally:
@@ -54,3 +63,20 @@ class Capturer:
     def capture(self):
         self._capture_once()
         self._capture_once()
+
+
+def _capture(link, action):
+    with chosen_driver() as driver:
+        driver.get(link)
+        action(driver)
+
+
+def capture_all(output_dir, data):
+    for link, action, info in data:
+        _header, domen, *_ = link.split(".")
+        out_dir = output_dir + "/" + domen
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+
+        capt = functools.partial(_capture, link, action)
+        Capturer(out_dir, capt, domen, info + driver_info).capture()

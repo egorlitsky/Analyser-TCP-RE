@@ -12,7 +12,6 @@ const bool PROMICIOUS_MODE  = false;
 const int TIMEOUT_MS  = 100;
 
 
-long long capturedPacketNumber = 0;
 bool withVlan = false;
 
 
@@ -23,7 +22,7 @@ int main(int argc, char **argv) {
 
         TCLAP::ValueArg<std::size_t> cacheSizeArg("", "cache_size",
                                           "Sets size of cache",
-                                          false, 256, "cache size, in KB");
+                                          false, 8, "cache size, in MB");
 
         TCLAP::ValueArg<std::string> ipAddrArg(
                         "", "ip_addr", "Sets ip address of destination", false,
@@ -59,17 +58,16 @@ int main(int argc, char **argv) {
 
 
         bool isOnline = devArg.isSet();
-        std::size_t cacheSize = cacheSizeArg.getValue() * 1024;
+        std::size_t cacheSize = cacheSizeArg.getValue() * 1024 * 1024;
 
         std::string ipAddr = ipAddrArg.getValue();
         std::string ipFilter = "";
         if (ipAddr != "") {
             ipFilter = "dst host " + ipAddr + " and ";
         }
-        std::string filterText = "tcp";
-        // std::string filterText = "tcp and " + ipFilter;
-        // filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2))";
-        // filterText += " != 0)";
+        std::string filterText = "tcp and " + ipFilter;
+        filterText += "(((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2))";
+        filterText += " != 0)";
 
         withVlan = vlanArg.getValue();
         if (withVlan) {
@@ -82,7 +80,6 @@ int main(int argc, char **argv) {
         std::ofstream ofs;
         std::string output = outputArg.getValue();
         if (output != "") {
-            // freopen(output.c_str(), "w", stdout);
             ofs.open(output.c_str());
             buf = ofs.rdbuf();
         } else {
@@ -95,16 +92,18 @@ int main(int argc, char **argv) {
             int numberOfPackets = packetNumArg.getValue();;
             Reporter rep(numberOfPackets);
             out << "Online capturing" << std::endl;
-            out << "Cache size: " << cacheSize / 1024 << "KB" << std::endl;
+            out << "Cache size: " << cacheSize / (1024 * 1024) << " MB" << std::endl;
 
             std::string devName = devArg.getValue();
             NetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, &cache);
             snf.setFilter(filterText);
             snf.setLoop(&rep, numberOfPackets);
             out << "Hit rate: " << cache.getHitRate() << std::endl;
+            out << "Collisions' number: " << cache.getCollisionsNumber()
+                << std::endl;
         } else {
             out << "Capturing from files" << std::endl;
-            out << "Cache size: " << cacheSize / 1024 << " KB" << std::endl;
+            out << "Cache size: " << cacheSize / (1024  * 1024) << " MB" << std::endl;
 
             std::vector<std::string> filenames = filenamesArg.getValue();
             time_t timer1, timer2;
@@ -123,14 +122,20 @@ int main(int argc, char **argv) {
                     << " capturing" << std::endl;
                 out << "   Number of captured packets: " << packet_count
                     << std::endl;
-                out << "   Total hit rate: " << cache.getHitRate() << std::endl;
+                out << "   Hit rate after: " << cache.getHitRate() << std::endl;
+                out << "   Collisions' number after: "
+                    << cache.getCollisionsNumber() << std::endl;
                 out << "   Accuired time, secs : "
                     << difftime(timer2, timer1) << std::endl;
-
-                capturedPacketNumber = 0;
                 std::cout << std::endl;
+
+                total_packet_count += packet_count;
             }
-            out <<
+            out << "Total number of captured packets: " << total_packet_count
+                << std::endl;
+            out << "Total hit rate: " << cache.getHitRate() << std::endl;
+            out << "Total collisions' number: "
+                << cache.getCollisionsNumber() << std::endl;
         }
 
     } catch (PcapException &e) {

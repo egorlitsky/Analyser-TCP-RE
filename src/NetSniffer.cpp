@@ -7,7 +7,6 @@
 #include "TcpIpInternetHeaders.hpp"
 
 
-extern long long capturedPacketNumber;
 extern bool withVlan;
 
 

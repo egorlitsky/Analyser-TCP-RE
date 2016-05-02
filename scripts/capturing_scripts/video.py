@@ -76,20 +76,16 @@ data_combined = [
 ]
 
 
+def make_data(data_list):
+    capt_data = []
+    for link, on_site_action, info, tag in data_list:
+        capt_action = functools.partial(driver_action, link, on_site_action)
+        full_info = info + "Initial link: " + link + "\n"
+        capt_data.append((capt_action, full_info, tag))
+    return capt_data
+        
 
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
-    capt_data = []
-
-    if args.sep:
-        for link, on_site_action, info, tag in data:
-            capt_action = functools.partial(driver_action, link, on_site_action)
-            full_info = info + "Initial link: " + link + "\n"
-            capt_data.append((capt_action, full_info, tag))
-        Capturer(args.out_dir, capt_data, sep=True).capture()
-    else:
-        for link, on_site_action, info, tag in data_combined:
-            capt_action = functools.partial(driver_action, link, on_site_action)
-            full_info = info + "Initial link: " + link + "\n"
-            capt_data.append((capt_action, full_info, tag))
-        Capturer(args.out_dir, capt_data, sep=False).capture()
+    capt_data = make_data(data if args.sep else data_combined)
+    Capturer(args.out_dir, capt_data, sep=args.sep).capture()

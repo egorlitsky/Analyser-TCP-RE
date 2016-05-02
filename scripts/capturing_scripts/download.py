@@ -8,10 +8,10 @@ from captools.argsparser import parse_args
 from captools.capturer import Capturer, run_download
 
 
-link1 = "http://releases.ubuntu.com/14.04/ubuntu-14.04.3-desktop-amd64.iso"
+link1 = "http://releases.ubuntu.com/14.04/ubuntu-14.04.4-desktop-amd64.iso"
 info1 = """\
 Capturing consists of downloading Ubuntu 14.04 distributive
-from http://releases.ubuntu.com/14.04/ubuntu-14.04.3-desktop-amd64.iso
+from releases.ubuntu.com
 """
 # flag1 = ""
 tag1 = "ubuntu_distributive"
@@ -76,22 +76,38 @@ data_combined = [
     (link1, info1, tag1)
 ]
 
+
+def make_data(data_list):
+    capt_data = []
+    for link, info, tag in data_list:
+        capt_action = functools.partial(run_download, link)
+        full_info = info + "Initial link: " + link + "\n"
+        capt_data.append((capt_action, full_info, tag))
+    return capt_data
+
+
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:])
-    capt_data = []
+    capt_data = make_data(data if args.sep else data_combined)
+    Capturer(args.out_dir, capt_data, sep=args.sep).capture()
 
-    if args.sep:
-        for link, info, tag in data:
-            capt_action = functools.partial(run_download, link)
-            full_info = info + "Initial link: " + link + "\n"
-            capt_data.append((capt_action, full_info, tag))
-        Capturer(args.out_dir, capt_data, sep=True).capture()
-    else:
-        for link, on_site_action, info, tag in data_combined:
-            capt_action = functools.partial(run_download, link)
-            full_info = info + "Initial link: " + link + "\n"
-            capt_data.append((capt_action, full_info, tag))
-        Capturer(args.out_dir, capt_data, sep=False).capture()
+
+# if __name__ == "__main__":
+#     args = parse_args(sys.argv[1:])
+#     capt_data = []
+
+#     if args.sep:
+#         for link, info, tag in data:
+#             capt_action = functools.partial(run_download, link)
+#             full_info = info + "Initial link: " + link + "\n"
+#             capt_data.append((capt_action, full_info, tag))
+#         Capturer(args.out_dir, capt_data, sep=True).capture()
+#     else:
+#         for link, info, tag in data_combined:
+#             capt_action = functools.partial(run_download, link)
+#             full_info = info + "Initial link: " + link + "\n"
+#             capt_data.append((capt_action, full_info, tag))
+#         Capturer(args.out_dir, capt_data, sep=False).capture()
 
 #     args = parse_args(sys.argv[1:])
 #     for url, info, flags, tag in data:

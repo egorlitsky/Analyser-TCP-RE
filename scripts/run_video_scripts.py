@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
 
-from script_runner import run
+import sys
+from script_runner import parse_args, run
 
 
 if __name__ == "__main__":
-    run("video", False)
+    args = parse_args(sys.argv[1:])
+    run("video", False, args.sep)

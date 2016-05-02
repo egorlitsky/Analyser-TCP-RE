@@ -9,7 +9,6 @@ import subprocess as subpr
 from script_runner import run, out_dir_temp as generated_dir
 
 
-# generated_dir = "./captures/generated_temp/"
 output_filename = "statistics.txt"
 
 scripts_prefs = ["browser", "video", "download"]
@@ -33,7 +32,7 @@ def calc_mean_var(values):
 
 def generate(script_pref):
     curr_dir = generated_dir + script_pref + "/"
-    run(script_pref, True)
+    run(script_pref, True, True)
 
     acc = []
     for folder in os.listdir(curr_dir):

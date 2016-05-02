@@ -27,11 +27,13 @@ def tcpdump(output_file):
 
 
 class Capturer:
-    def __init__(self, parent_dir, capture_proc, tag, info):
+    # @parent_dir - str with path to the folder where to create subfolders
+    # @data - tuple, contains (action, info, tag)
+    # @sep - bool which indicates if actions should be 
+    def __init__(self, parent_dir, data, sep=True):
         self._dir = parent_dir
-        self._capture_proc = capture_proc
-        self._tag = tag
-        self._info = info
+        self._data = data
+        self._sep = sep
 
     def _clear_browser_cache(self):
         chromium_cache = "~/.cache/chromium/Default/"
@@ -45,38 +47,65 @@ class Capturer:
         )
 
 
-    def _generate_info(self, filename):
+    def _generate_info(self, filename, info):
         f = open(filename, "w+")
-        f.write(self._info)
+        f.write(info)
         f.close()
 
-    def _capture_once(self):
+    def _generate_header(self, tag):
         ts, *_ = str(datetime.datetime.now()).rpartition(".")
         ts = ts.replace(" ", "_")
-        output_file_header = self._dir + "/" + self._tag + "_" + ts
-        self._generate_info(output_file_header + ".txt")
+        return self._dir + "/" + tag + "/" + tag + "_" + ts
 
-        # self._clear_browser_cache()
+
+    def _capture_once(self, action, info, tag):
+        output_file_header = self._generate_header(tag)
+        self._generate_info(output_file_header + ".txt", info)
+
         with tcpdump(output_file_header + ".pcap"):
-            self._capture_proc()
-
-    def capture(self):
-        self._capture_once()
-        self._capture_once()
+            action()
 
 
-def _capture(link, action):
-    with chosen_driver() as driver:
-        driver.get(link)
-        action(driver)
-
-
-def capture_all(output_dir, data):
-    for link, action, info in data:
-        _header, domen, *_ = link.split(".")
-        out_dir = output_dir + "/" + domen
+    def _check_dir(self, tag):
+        out_dir = self._dir + "/" + tag
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
-        capt = functools.partial(_capture, link, action)
-        Capturer(out_dir, capt, domen, info + driver_info).capture()
+
+    # function checks if subfolders with tag (or 'combined')
+    # labels exist and creates it if necessary
+
+    def capture(self):
+        if self._sep:
+            for action, info, tag in self._data:
+                self._check_dir(tag)
+                self._capture_once(action, info, tag)
+                self._capture_once(action, info, tag)
+        else:
+            tag = "combined"
+            self._check_dir(tag)
+            output_file_header = self._generate_header(tag)
+
+            prefr = "This capture contains several sessions combined in one, "
+            t_info = [prefr + "order of the actions:\n"]
+
+            with tcpdump(output_file_header + ".pcap"):
+                for i, (action, info, _tag) in enumerate(self._data):
+                    t_info.append("{}. ".format(i + 1)  + info)
+                    action()
+
+            self._generate_info(output_file_header + ".txt", "\n".join(t_info))
+
+
+
+def driver_action(link, on_site_action):
+    with chosen_driver() as driver:
+        driver.get(link)
+        on_site_action(driver)
+
+
+def run_download(url, flags=""):
+    output_file = "__output__"
+    cmd = "wget " + flags + url + " -O " + output_file
+    os.system(cmd)
+    os.system("rm " + output_file)

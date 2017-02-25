@@ -3,11 +3,14 @@
 #include <iostream>
 #include <pcap.h>
 #include <stdio.h>
+#include <string.h>
+#include <fstream>
 #include "NetSniffer.hpp"
 #include "TcpIpInternetHeaders.hpp"
 
 
 extern bool withVlan;
+extern bool withStreams;
 
 
 struct Params {
@@ -149,7 +152,34 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
         parsePacket(params, &header, packet);
         cnt += 1;
     }
+    
+    if (withStreams) {
+        std::ofstream fout("stream.txt");
+        for(auto stream : p.cache->tcpStreams) {
+            const char *aux = inet_ntoa(stream.ipSrc);
+            const char *ipSrc = strcpy(new char[strlen(aux)+1], aux);
 
+            aux = inet_ntoa(stream.ipDst);
+            const char *ipDst = strcpy(new char[strlen(aux)+1], aux);
+
+            fout << std::endl << std::endl << std::endl << std::endl << std::endl;
+            fout << "IP src: " << ipSrc << std::endl <<
+                    "IP dst: " << ipDst << std::endl <<
+                    "TCP sPort: " << stream.tcpSport << std::endl <<
+                    "TCP dPort: " << stream.tcpDport << std::endl << std::endl;
+
+            for(auto packet : stream.getPackets()) {
+                unsigned char* payload = packet.second.second;
+                unsigned int size = packet.second.first;
+
+                for (int i = 0; i < size; ++i) {
+                    fout << payload[i];
+                }
+            }
+        }
+        fout.close();
+    }
+        
     if (rep != NULL) {
         rep->fin();
     }
@@ -233,6 +263,20 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
    
     Md5HashedPayload HashedPayload(payload, payloadSize, true);
     p->cache->add(HashedPayload);
+    
+    if (withStreams) {
+        u_int tcpSeq = (u_int)htonl(tcpHeader->tcpSeq);
+    
+        struct in_addr ipSrc = ipHeader->ipSrc;
+        struct in_addr ipDst = ipHeader->ipDst;
 
+        u_short tcpSport = ntohs(tcpHeader->tcpSport);
+        u_short tcpDport = ntohs(tcpHeader->tcpDport);
+
+        TcpStream stream(ipSrc, ipDst, tcpSport, tcpDport);
+        stream.addPacketToStream(tcpSeq, payload, payloadSize, true);
+        p->cache->addStream(stream);
+    }
+    
     return;
 }

@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <utility>
 #include "Md5HashedPayload.hpp"
+#include "TcpStream.hpp"
 
 
 class Cache {
@@ -42,6 +43,9 @@ public:
     void add(Md5HashedPayload const &hPayload);
     void clear();
     ~Cache();
+    
+    void addStream(TcpStream &stream);
+    std::set<TcpStream> tcpStreams;
 };
 
 

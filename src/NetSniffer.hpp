@@ -5,9 +5,11 @@
 #include <cstdint>
 #include <exception>
 #include <string>
+#include <set>
 #include <pcap.h>
 #include "CacheStructure.hpp"
 #include "Reporter.hpp"
+#include "TcpStream.hpp"
 
 
 class PcapException: std::exception {

@@ -76,3 +76,33 @@ Cache::~Cache() {
         delete it->payload;
     }
 }
+
+void Cache::addStream(TcpStream &stream) {
+    std::set<TcpStream>::iterator oldStream;
+    TcpStream newStream = stream;
+    bool isStreamExist = false;
+    
+    for (std::set<TcpStream>::iterator existingStream = this->tcpStreams.begin(); existingStream != this->tcpStreams.end(); ++existingStream) {
+        if (*existingStream == stream) {
+            isStreamExist = true;
+            oldStream = existingStream;
+            newStream = *existingStream;
+            
+            break;
+        }    
+    }
+    
+    if (isStreamExist) {
+        u_int tcpSeq = stream.getPackets().begin()->first;
+        unsigned char* payload = stream.getPackets().begin()->second.second;
+        unsigned int size = stream.getPackets().begin()->second.first;
+
+        newStream.addPacketToStream(tcpSeq, payload,
+            size, true);
+        
+        this->tcpStreams.erase(oldStream);
+        this->tcpStreams.insert(newStream);        
+    } else {
+        this->tcpStreams.insert(stream);        
+    }
+}

@@ -13,6 +13,7 @@ const int TIMEOUT_MS  = 100;
 
 
 bool withVlan = false;
+bool withStreams = false;
 
 
 int main(int argc, char **argv) {
@@ -49,6 +50,10 @@ int main(int argc, char **argv) {
         TCLAP::ValueArg<int> packetNumArg("n", "packet_number", descr.c_str(),
                                           false, 768, "# of packets to capture");
 
+        TCLAP::SwitchArg streamArg("", "streams",
+                         "Separates all packets on streams and writes it in the file",
+                         cmd, false);
+        
         cmd.add(cacheSizeArg);
         cmd.add(ipAddrArg);
         cmd.xorAdd(devArg, filenamesArg);
@@ -74,6 +79,8 @@ int main(int argc, char **argv) {
             filterText = "vlan and " + filterText;
         }
 
+        withStreams = streamArg.getValue();
+        
         Cache cache(cacheSize);
 
         std::streambuf *buf;

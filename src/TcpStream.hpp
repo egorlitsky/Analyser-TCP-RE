@@ -6,10 +6,11 @@
 #include <map>
 #include "Md5HashedPayload.hpp"
 
+// TODO: limit totalSize
 class TcpStream {
 private:
     // TODO: replace unsigned char* to Md5HashedPayload*
-    std::map<u_int, std::pair<unsigned int, unsigned char*>> packets;
+    std::map<u_int, std::vector<unsigned char>> packets;
 	
 public:
     struct in_addr ipSrc;
@@ -27,13 +28,13 @@ public:
     bool operator<(TcpStream const & otherStream) const;
     
     // TODO: replace unsigned char* to Md5HashedPayload*
-    std::map<u_int, std::pair<unsigned int, unsigned char*>> getPackets();
+    std::map<u_int, std::vector<unsigned char>> getPackets();
     
     // TODO: replace unsigned char* to Md5HashedPayload*
     void addPacketToStream(u_int tcpSeq, unsigned char*,
-            unsigned int size, bool isTemp = false);
+            unsigned int size);
     
-    std::map<u_int, std::pair<unsigned int, unsigned char*>>::iterator get_first_packet();
+    std::map<u_int, std::vector<unsigned char>>::iterator get_first_packet();
 };
 
 #endif

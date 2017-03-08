@@ -19,6 +19,11 @@ TcpStream &TcpStream::operator=(TcpStream const& anotherTcpStream) {
     this->tcpDport = anotherTcpStream.tcpDport;
     
     this->packets = anotherTcpStream.packets;
+
+//    for(auto packet : anotherTcpStream.packets) {
+//        this->addPacketToStream(packet.first, packet.second.second,
+//                packet.second.first, true);
+//    }
 }
 
 bool TcpStream::operator==(TcpStream const& otherStream) const {
@@ -38,33 +43,29 @@ bool TcpStream::operator<(TcpStream const & otherStream) const {
 }
 
 // TODO: replace unsigned char* to Md5HashedPayload*
-std::map<u_int, std::pair<unsigned int, unsigned char*>> TcpStream::getPackets() {
+std::map<u_int, std::vector<unsigned char>> TcpStream::getPackets() {
     return this->packets;
 }
 
 // TODO: replace unsigned char* to Md5HashedPayload*
 void TcpStream::addPacketToStream(u_int tcpSeq, unsigned char *payload,
-        unsigned int size, bool isTemp) {
+        unsigned int size) {
 
-    if (!isTemp) {
-        unsigned char *copyPayload = new unsigned char[size];
-        
-        for (unsigned int i = 0; i < size; ++i) {
-            copyPayload[i] = payload[i];
-        }
-        
-        this->packets.insert (std::pair<u_int, std::pair<unsigned int, unsigned char*>>(tcpSeq, std::pair<unsigned int, unsigned char*>(size, copyPayload)));
-    } else {
-        this->packets.insert (std::pair<u_int, std::pair<unsigned int, unsigned char*>>(tcpSeq, std::pair<unsigned int, unsigned char*>(size, payload)));
+    std::vector<unsigned char> payload_vec;
+    
+    for (int i = 0; i < size; ++i) {
+        payload_vec.push_back(payload[i]);
     }
+    
+    this->packets.insert (std::pair<u_int, std::vector<unsigned char>>(tcpSeq, payload_vec));
 }
 
-std::map<u_int, std::pair<unsigned int, unsigned char*>>::iterator TcpStream::get_first_packet() {
+std::map<u_int, std::vector<unsigned char>>::iterator TcpStream::get_first_packet() {
     return this->packets.begin();
 }
 
 TcpStream::~TcpStream() {
-    typedef std::map<u_int, std::pair<unsigned int, unsigned char*>>::iterator iter_type;
+    typedef std::map<u_int, std::vector<unsigned char>>::iterator iter_type;
 
     for (iter_type packet_iter = packets.begin(); packet_iter != packets.end(); packet_iter++) {
         packets.erase(packet_iter); 

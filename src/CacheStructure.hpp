@@ -44,7 +44,10 @@ public:
     void clear();
     ~Cache();
     
-    void addStream(TcpStream &stream);
+    void addPacket(struct in_addr ipSrc, struct in_addr ipDst, 
+            u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
+            unsigned char * payload, unsigned int payloadSize);
+    
     std::set<TcpStream> tcpStreams;
 };
 

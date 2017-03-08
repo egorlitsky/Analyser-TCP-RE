@@ -77,13 +77,17 @@ Cache::~Cache() {
     }
 }
 
-void Cache::addStream(TcpStream &stream) {
+void Cache::addPacket(struct in_addr ipSrc, struct in_addr ipDst, 
+            u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
+            unsigned char * payload, unsigned int payloadSize) {
+    
     std::set<TcpStream>::iterator oldStream;
-    TcpStream newStream = stream;
+    TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport);
     bool isStreamExist = false;
     
     for (std::set<TcpStream>::iterator existingStream = this->tcpStreams.begin(); existingStream != this->tcpStreams.end(); ++existingStream) {
-        if (*existingStream == stream) {
+        if (*existingStream == newStream) {
+            
             isStreamExist = true;
             oldStream = existingStream;
             newStream = *existingStream;
@@ -93,16 +97,12 @@ void Cache::addStream(TcpStream &stream) {
     }
     
     if (isStreamExist) {
-        u_int tcpSeq = stream.getPackets().begin()->first;
-        unsigned char* payload = stream.getPackets().begin()->second.second;
-        unsigned int size = stream.getPackets().begin()->second.first;
-
-        newStream.addPacketToStream(tcpSeq, payload,
-            size, true);
-        
+        newStream.addPacketToStream(tcpSeq, payload, payloadSize);
         this->tcpStreams.erase(oldStream);
-        this->tcpStreams.insert(newStream);        
+        this->tcpStreams.insert(newStream);  
+        
     } else {
-        this->tcpStreams.insert(stream);        
+        newStream.addPacketToStream(tcpSeq, payload, payloadSize);
+        this->tcpStreams.insert(newStream);        
     }
 }

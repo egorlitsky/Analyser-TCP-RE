@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <fstream>
+#include <sstream>
 #include "NetSniffer.hpp"
 #include "TcpIpInternetHeaders.hpp"
 
@@ -154,30 +155,28 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
     }
     
     if (withStreams) {
-        std::ofstream fout("stream.txt");
         for(auto stream : p.cache->tcpStreams) {
             const char *aux = inet_ntoa(stream.ipSrc);
             const char *ipSrc = strcpy(new char[strlen(aux)+1], aux);
 
             aux = inet_ntoa(stream.ipDst);
             const char *ipDst = strcpy(new char[strlen(aux)+1], aux);
-
-            fout << std::endl << std::endl << std::endl << std::endl << std::endl;
-            fout << "IP src: " << ipSrc << std::endl <<
-                    "IP dst: " << ipDst << std::endl <<
-                    "TCP sPort: " << stream.tcpSport << std::endl <<
-                    "TCP dPort: " << stream.tcpDport << std::endl << std::endl;
+            
+            std::ostringstream oss;
+            oss << "" << ipSrc << "_" << ipDst << "_" << 
+                    stream.tcpSport << "_" << stream.tcpDport << ".txt";
+            
+            std::string file_name = oss.str();   
+            std::ofstream fout(file_name, std::ios::binary);
 
             for(auto packet : stream.getPackets()) {
-                unsigned char* payload = packet.second.second;
-                unsigned int size = packet.second.first;
-
-                for (int i = 0; i < size; ++i) {
-                    fout << payload[i];
+                for (int i = 0; i < packet.second.size(); ++i) {
+                    fout << packet.second[i];
                 }
             }
+            
+            fout.close();
         }
-        fout.close();
     }
         
     if (rep != NULL) {
@@ -263,7 +262,7 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
    
     Md5HashedPayload HashedPayload(payload, payloadSize, true);
     p->cache->add(HashedPayload);
-    
+        
     if (withStreams) {
         u_int tcpSeq = (u_int)htonl(tcpHeader->tcpSeq);
     
@@ -273,10 +272,8 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
         u_short tcpSport = ntohs(tcpHeader->tcpSport);
         u_short tcpDport = ntohs(tcpHeader->tcpDport);
 
-        TcpStream stream(ipSrc, ipDst, tcpSport, tcpDport);
-        stream.addPacketToStream(tcpSeq, payload, payloadSize, true);
-        p->cache->addStream(stream);
+        p->cache->addPacket(ipSrc, ipDst, tcpSport, tcpDport,
+                tcpSeq, payload, payloadSize);
     }
-    
     return;
 }

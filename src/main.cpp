@@ -6,6 +6,7 @@
 #include <vector>
 #include <tclap/CmdLine.h>
 #include "NetSniffer.hpp"
+#include "StreamNetSniffer.hpp"
 
 
 const bool PROMICIOUS_MODE  = false;
@@ -13,7 +14,7 @@ const int TIMEOUT_MS  = 100;
 
 
 bool withVlan = false;
-bool withStreams = false;
+std::size_t streamSize;
 
 
 int main(int argc, char **argv) {
@@ -54,7 +55,12 @@ int main(int argc, char **argv) {
                          "Separates all packets on streams and writes it in the file",
                          cmd, false);
         
+        TCLAP::ValueArg<std::size_t> streamSizeArg("", "stream_size",
+                                  "Sets size of one stream",
+                                  false, 1, "stream size, in MB");
+        
         cmd.add(cacheSizeArg);
+        cmd.add(streamSizeArg);
         cmd.add(ipAddrArg);
         cmd.xorAdd(devArg, filenamesArg);
         cmd.add(outputArg);
@@ -64,7 +70,7 @@ int main(int argc, char **argv) {
 
         bool isOnline = devArg.isSet();
         std::size_t cacheSize = cacheSizeArg.getValue() * 1024 * 1024;
-
+        
         std::string ipAddr = ipAddrArg.getValue();
         std::string ipFilter = "";
         if (ipAddr != "") {
@@ -79,10 +85,6 @@ int main(int argc, char **argv) {
             filterText = "vlan and " + filterText;
         }
 
-        withStreams = streamArg.getValue();
-        
-        Cache cache(cacheSize);
-
         std::streambuf *buf;
         std::ofstream ofs;
         std::string output = outputArg.getValue();
@@ -93,58 +95,115 @@ int main(int argc, char **argv) {
             buf = std::cout.rdbuf();
         }
         std::ostream out(buf);
+        
+        bool isStreamCache = streamArg.getValue();
+        if (isStreamCache) {
+            streamSize = streamSizeArg.getValue() * 1024 * 1024;
+            
+            StreamCache cache(cacheSize);
 
+            if (isOnline) {
+                int numberOfPackets = packetNumArg.getValue();;
+                Reporter rep(numberOfPackets);
+                out << "Online capturing" << std::endl;
+                out << "Cache size: " << cacheSize / (1024 * 1024) << " MB" << std::endl;
 
-        if (isOnline) {
-            int numberOfPackets = packetNumArg.getValue();;
-            Reporter rep(numberOfPackets);
-            out << "Online capturing" << std::endl;
-            out << "Cache size: " << cacheSize / (1024 * 1024) << " MB" << std::endl;
-
-            std::string devName = devArg.getValue();
-            NetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, &cache);
-            snf.setFilter(filterText);
-            snf.setLoop(&rep, numberOfPackets);
-            out << "Hit rate: " << cache.getHitRate() << std::endl;
-            out << "Collisions' number: " << cache.getCollisionsNumber()
-                << std::endl;
-        } else {
-            out << "Capturing from files" << std::endl;
-            out << "Cache size: " << cacheSize / (1024  * 1024) << " MB" << std::endl;
-
-            std::vector<std::string> filenames = filenamesArg.getValue();
-            time_t timer1, timer2;
-            std::uint64_t total_packet_count = 0;
-            for (std::size_t i = 0; i < filenames.size(); ++i) {
-                NetSniffer snf(filenames[i].c_str(), &cache);
+                std::string devName = devArg.getValue();
+                StreamNetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, &cache);
                 snf.setFilter(filterText);
-                Reporter rep(0);
-
-                time(&timer1);
-                std::uint64_t packet_count = snf.captureAll(&rep);
-                time(&timer2);
-
-                out << std::endl;
-                out << i + 1 << ". After " << filenames[i]
-                    << " capturing" << std::endl;
-                out << "   Number of captured packets: " << packet_count
+                snf.setLoop(&rep, numberOfPackets);
+                out << "Hit rate: " << cache.getHitRate() << std::endl;
+                out << "Collisions' number: " << cache.getCollisionsNumber()
                     << std::endl;
-                out << "   Hit rate after: " << cache.getHitRate() << std::endl;
-                out << "   Collisions' number after: "
+            } else {
+                out << "Capturing from files" << std::endl;
+                out << "Cache size: " << cacheSize / (1024  * 1024) << " MB" << std::endl;
+
+                std::vector<std::string> filenames = filenamesArg.getValue();
+                time_t timer1, timer2;
+                std::uint64_t total_packet_count = 0;
+                for (std::size_t i = 0; i < filenames.size(); ++i) {
+                    StreamNetSniffer snf(filenames[i].c_str(), &cache);
+                    snf.setFilter(filterText);
+                    Reporter rep(0);
+
+                    time(&timer1);
+                    std::uint64_t packet_count = snf.captureAll(&rep);
+                    time(&timer2);
+
+                    out << std::endl;
+                    out << i + 1 << ". After " << filenames[i]
+                        << " capturing" << std::endl;
+                    out << "   Number of captured packets: " << packet_count
+                        << std::endl;
+                    out << "   Hit rate after: " << cache.getHitRate() << std::endl;
+                    out << "   Collisions' number after: "
+                        << cache.getCollisionsNumber() << std::endl;
+                    out << "   Accuired time, secs : "
+                        << difftime(timer2, timer1) << std::endl;
+                    std::cout << std::endl;
+
+                    total_packet_count += packet_count;
+                }
+                out << "Total number of captured packets: " << total_packet_count
+                    << std::endl;
+                out << "Total hit rate: " << cache.getHitRate() << std::endl;
+                out << "Total collisions' number: "
                     << cache.getCollisionsNumber() << std::endl;
-                out << "   Accuired time, secs : "
-                    << difftime(timer2, timer1) << std::endl;
-                std::cout << std::endl;
-
-                total_packet_count += packet_count;
             }
-            out << "Total number of captured packets: " << total_packet_count
-                << std::endl;
-            out << "Total hit rate: " << cache.getHitRate() << std::endl;
-            out << "Total collisions' number: "
-                << cache.getCollisionsNumber() << std::endl;
-        }
+        } else {
+            Cache cache(cacheSize);
 
+            if (isOnline) {
+                int numberOfPackets = packetNumArg.getValue();;
+                Reporter rep(numberOfPackets);
+                out << "Online capturing" << std::endl;
+                out << "Cache size: " << cacheSize / (1024 * 1024) << " MB" << std::endl;
+
+                std::string devName = devArg.getValue();
+                NetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, &cache);
+                snf.setFilter(filterText);
+                snf.setLoop(&rep, numberOfPackets);
+                out << "Hit rate: " << cache.getHitRate() << std::endl;
+                out << "Collisions' number: " << cache.getCollisionsNumber()
+                    << std::endl;
+            } else {
+                out << "Capturing from files" << std::endl;
+                out << "Cache size: " << cacheSize / (1024  * 1024) << " MB" << std::endl;
+
+                std::vector<std::string> filenames = filenamesArg.getValue();
+                time_t timer1, timer2;
+                std::uint64_t total_packet_count = 0;
+                for (std::size_t i = 0; i < filenames.size(); ++i) {
+                    NetSniffer snf(filenames[i].c_str(), &cache);
+                    snf.setFilter(filterText);
+                    Reporter rep(0);
+
+                    time(&timer1);
+                    std::uint64_t packet_count = snf.captureAll(&rep);
+                    time(&timer2);
+
+                    out << std::endl;
+                    out << i + 1 << ". After " << filenames[i]
+                        << " capturing" << std::endl;
+                    out << "   Number of captured packets: " << packet_count
+                        << std::endl;
+                    out << "   Hit rate after: " << cache.getHitRate() << std::endl;
+                    out << "   Collisions' number after: "
+                        << cache.getCollisionsNumber() << std::endl;
+                    out << "   Accuired time, secs : "
+                        << difftime(timer2, timer1) << std::endl;
+                    std::cout << std::endl;
+
+                    total_packet_count += packet_count;
+                }
+                out << "Total number of captured packets: " << total_packet_count
+                    << std::endl;
+                out << "Total hit rate: " << cache.getHitRate() << std::endl;
+                out << "Total collisions' number: "
+                    << cache.getCollisionsNumber() << std::endl;
+            }            
+        }
     } catch (PcapException &e) {
         std::cout << e.what();
     } catch (TCLAP::ArgException &e) {

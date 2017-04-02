@@ -1,8 +1,8 @@
 #include "CacheStructure.hpp"
 
 Cache::Cache(std::size_t cacheSize): _hits(0), _misses(0), _collisionsNum(0),
-                                _itMap(), _cache(), _maxSize(cacheSize),
-                                _size(0) {}
+            _itMap(), _cache(), _maxSize(cacheSize),
+            _size(0) {}
 
 
 float Cache::getHitRate(void) const {
@@ -74,35 +74,5 @@ void Cache::clear() {
 Cache::~Cache() {
     for (cacheIterType it = _cache.begin(); it != _cache.end(); ++it) {
         delete it->payload;
-    }
-}
-
-void Cache::addPacket(struct in_addr ipSrc, struct in_addr ipDst, 
-            u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
-            unsigned char * payload, unsigned int payloadSize) {
-    
-    std::set<TcpStream>::iterator oldStream;
-    TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport);
-    bool isStreamExist = false;
-    
-    for (std::set<TcpStream>::iterator existingStream = this->tcpStreams.begin(); existingStream != this->tcpStreams.end(); ++existingStream) {
-        if (*existingStream == newStream) {
-            
-            isStreamExist = true;
-            oldStream = existingStream;
-            newStream = *existingStream;
-            
-            break;
-        }    
-    }
-    
-    if (isStreamExist) {
-        newStream.addPacketToStream(tcpSeq, payload, payloadSize);
-        this->tcpStreams.erase(oldStream);
-        this->tcpStreams.insert(newStream);  
-        
-    } else {
-        newStream.addPacketToStream(tcpSeq, payload, payloadSize);
-        this->tcpStreams.insert(newStream);        
     }
 }

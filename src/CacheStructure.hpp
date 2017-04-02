@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <utility>
 #include "Md5HashedPayload.hpp"
-#include "TcpStream.hpp"
 
 
 class Cache {
@@ -14,7 +13,7 @@ private:
     int _hits;
     int _misses;
     int _collisionsNum;
-
+    
     // sizes in bytes
     std::size_t _maxSize;
     std::size_t _size;
@@ -43,12 +42,6 @@ public:
     void add(Md5HashedPayload const &hPayload);
     void clear();
     ~Cache();
-    
-    void addPacket(struct in_addr ipSrc, struct in_addr ipDst, 
-            u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
-            unsigned char * payload, unsigned int payloadSize);
-    
-    std::set<TcpStream> tcpStreams;
 };
 
 

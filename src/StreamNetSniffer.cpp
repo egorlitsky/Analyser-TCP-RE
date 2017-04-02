@@ -3,25 +3,26 @@
 #include <iostream>
 #include <pcap.h>
 #include <stdio.h>
-#include "NetSniffer.hpp"
+#include <string.h>
+#include <fstream>
+#include <sstream>
+#include "StreamNetSniffer.hpp"
 #include "TcpIpInternetHeaders.hpp"
-
 
 extern bool withVlan;
 
-
 struct Params {
     Reporter *rep;
-    Cache *cache;
-    Params(Reporter *r, Cache *c): rep(r), cache(c) {}
+    StreamCache *cache;
+    Params(Reporter *r, StreamCache *c): rep(r), cache(c) {}
 };
 
 
-void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
+void parseSegment(u_char *args, const struct pcap_pkthdr *header, 
     const u_char *packet);
 
 
-std::string NetSniffer::getIpAddress(void) const {
+std::string StreamNetSniffer::getIpAddress(void) const {
     if (devInt == NULL) {
         handleErrors("No device interface to capture");
     }
@@ -38,13 +39,13 @@ std::string NetSniffer::getIpAddress(void) const {
 }
 
 
-NetSniffer::NetSniffer(std::string const &inputDevName,
+StreamNetSniffer::StreamNetSniffer(std::string const &inputDevName,
                        bool promisModeOn,
                        int timeoutInMs,
-                       Cache *cache):
+                       StreamCache *cache):
     devInt(NULL),
     compiledFilter(NULL),
-    packetCache_(cache),
+    streamCache_(cache),
     onlineCapturing_(true)
 {
     std::string devName;
@@ -78,10 +79,10 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 }
 
 
-NetSniffer::NetSniffer(const char *inputSavefile, Cache *cache):
+StreamNetSniffer::StreamNetSniffer(const char *inputSavefile, StreamCache *cache):
     devInt(NULL),
     compiledFilter(NULL),
-    packetCache_(cache),
+    streamCache_(cache),
     onlineCapturing_(false)
 {
     handle = pcap_open_offline(inputSavefile, errBuf);
@@ -91,7 +92,7 @@ NetSniffer::NetSniffer(const char *inputSavefile, Cache *cache):
 }
 
 
-void NetSniffer::setFilter(std::string const &filterText) {
+void StreamNetSniffer::setFilter(std::string const &filterText) {
     if (handle == NULL) {
         handleErrors("No handle is set");
     }
@@ -117,14 +118,14 @@ void NetSniffer::setFilter(std::string const &filterText) {
 }
 
 
-void NetSniffer::setLoop(Reporter *rep, int numPkgs) const {
-    if (packetCache_ == NULL) {
+void StreamNetSniffer::setLoop(Reporter *rep, int numPkgs) const {
+    if (streamCache_ == NULL) {
         handleErrors("No cache to store info!");
     }
-    Params p(rep, packetCache_);
+    Params p(rep, streamCache_);
     u_char *params = (u_char*)(&p);
 
-    if (pcap_loop(handle, numPkgs, parsePacket, params) == -1) {
+    if (pcap_loop(handle, numPkgs, parseSegment, params) == -1) {
         handleErrors("An error have occured during looping");
     }
     
@@ -134,22 +135,54 @@ void NetSniffer::setLoop(Reporter *rep, int numPkgs) const {
 }
 
 
-std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
+std::uint64_t StreamNetSniffer::captureAll(Reporter *rep) const {
     const u_char *packet = NULL;
     struct pcap_pkthdr header;
 
-    if (packetCache_ == NULL) {
+    if (streamCache_ == NULL) {
         handleErrors("No cache to store info!");
     }
-    Params p(rep, packetCache_);
+    Params p(rep, streamCache_);
     u_char *params = (u_char*)(&p);
 
     std::uint64_t cnt = 0;
     while (packet = pcap_next(handle, &header)) {
-        parsePacket(params, &header, packet);
+        parseSegment(params, &header, packet);
         cnt += 1;
     }
-     
+    
+    for(StreamCache::cacheIterType it = p.cache->_cache.begin(); it != p.cache->_cache.end(); ++it) {
+        const char *aux = inet_ntoa(it->stream.ipSrc);
+        const char *ipSrc = strcpy(new char[strlen(aux)+1], aux);
+
+        aux = inet_ntoa(it->stream.ipDst);
+        const char *ipDst = strcpy(new char[strlen(aux)+1], aux);
+
+        std::ostringstream oss;
+        oss << "" << ipSrc << "_" << ipDst << "_" << 
+                it->stream.tcpSport << "_" << it->stream.tcpDport << ".txt";
+
+        std::string file_name = oss.str();   
+        std::ofstream fout(file_name, std::ios::binary);
+
+        // output like the Wireshark output in 'Follow TCP Stream'
+        for(auto packet : it->stream.packets) {
+            for (int i = 0; i < packet.second.size(); ++i) {
+                
+                char c = packet.second[i],
+                        wiresharkChar = c >= ' ' && c < 0x7f ? c : '.';
+                
+                if (c == '\n' || c == '\r' || c == '\t') {
+                    fout << c;
+                } else {
+                    fout << wiresharkChar;
+                }
+            }
+        }
+
+        fout.close();
+    }
+        
     if (rep != NULL) {
         rep->fin();
     }
@@ -157,18 +190,16 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
     return cnt;
 }
 
+void StreamNetSniffer::setCache(StreamCache *cache) {
+    streamCache_ = cache;
+}
 
-void NetSniffer::setCache(Cache *cache) {
-    packetCache_ = cache;
+StreamCache *StreamNetSniffer::getCache(void) {
+    return streamCache_;
 }
 
 
-Cache *NetSniffer::getCache(void) {
-    return packetCache_;
-}
-
-
-NetSniffer::~NetSniffer() {
+StreamNetSniffer::~StreamNetSniffer() {
     if (compiledFilter != NULL) {
         pcap_freecode(compiledFilter);
         delete compiledFilter;
@@ -179,19 +210,19 @@ NetSniffer::~NetSniffer() {
 }
 
 
-PcapException::PcapException(const std::string &errMsg): 
+StreamPcapException::StreamPcapException(const std::string &errMsg): 
         exception(), errMsgFromPcap(errMsg) {}
 
 
-const char *PcapException::what() const throw() {
+const char *StreamPcapException::what() const throw() {
     return errMsgFromPcap.c_str();
 }
 
 
-PcapException::~PcapException() throw() {}
+StreamPcapException::~StreamPcapException() throw() {}
 
 
-void parsePacket(u_char *args, const struct pcap_pkthdr *header, 
+void parseSegment(u_char *args, const struct pcap_pkthdr *header, 
     const u_char *packet)
 {
     const struct sniffEtherHeader *ethernetHeader;
@@ -231,8 +262,16 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
         p->rep->inc();
     }
    
-    Md5HashedPayload HashedPayload(payload, payloadSize, true);
-    p->cache->add(HashedPayload);
+    u_int tcpSeq = (u_int)htonl(tcpHeader->tcpSeq);
 
+    struct in_addr ipSrc = ipHeader->ipSrc;
+    struct in_addr ipDst = ipHeader->ipDst;
+
+    u_short tcpSport = ntohs(tcpHeader->tcpSport);
+    u_short tcpDport = ntohs(tcpHeader->tcpDport);
+
+    p->cache->add(ipSrc, ipDst, tcpSport, tcpDport,
+            tcpSeq, payload, payloadSize);
+        
     return;
 }

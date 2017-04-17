@@ -5,10 +5,11 @@
 #include <set>
 #include <unordered_map>
 #include <utility>
-#include "Md5HashedPayload.hpp"
+#include "ICache.hpp"
+#include "TcpStream.hpp"
 
 
-class Cache {
+class Cache : public ICache {
 private:
     int _hits;
     int _misses;
@@ -36,10 +37,14 @@ private:
 
 public:
     explicit Cache(std::size_t cacheSize);
+    void printCacheData(void);
     std::size_t getSize(void) const;
     float getHitRate(void) const;
     int getCollisionsNumber(void) const;
     void add(Md5HashedPayload const &hPayload);
+    void add(struct in_addr ipSrc, struct in_addr ipDst, 
+        u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
+        unsigned char * payload, unsigned int payloadSize);
     void clear();
     ~Cache();
 };

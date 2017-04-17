@@ -6,7 +6,7 @@
 #include <exception>
 #include <string>
 #include <pcap.h>
-#include "CacheStructure.hpp"
+#include "ICache.hpp"
 #include "Reporter.hpp"
 
 
@@ -30,23 +30,23 @@ private:
     struct bpf_program *compiledFilter;
 
     char errBuf[PCAP_ERRBUF_SIZE];
-    Cache *packetCache_;
+    ICache *packetCache_;
 
     void handleErrors(const std::string &descrMsg) const {
         throw PcapException(descrMsg);
     }
 public:
     NetSniffer(std::string const &inputDevName, bool promisModeOn,
-        int timeoutInMs, Cache *cache);
-    NetSniffer(const char *inputSavefile, Cache *cache);
+        int timeoutInMs, ICache *cache);
+    NetSniffer(const char *inputSavefile, ICache *cache);
 
     std::string getIpAddress(void) const;
     void setFilter(std::string const &filterText);
     void setLoop(Reporter *rep, int numPkgs) const;
     std::uint64_t captureAll(Reporter *rep) const;
     ~NetSniffer();
-    void setCache(Cache *c_);
-    Cache *getCache(void);
+    void setCache(ICache *c_);
+    ICache *getCache(void);
 };
 
 

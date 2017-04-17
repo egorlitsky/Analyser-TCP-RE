@@ -13,7 +13,7 @@ BUILD_DIR = bin
 
 MK_BUILD_DIR = mkdir -p ./$(BUILD_DIR)
 
-OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/StreamNetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/TcpStream.o $(BUILD_DIR)/CacheStructure.o $(BUILD_DIR)/StreamCacheStructure.o $(BUILD_DIR)/Reporter.o
+OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/TcpStream.o $(BUILD_DIR)/CacheStructure.o $(BUILD_DIR)/StreamCacheStructure.o $(BUILD_DIR)/Reporter.o
 OBJS_MAIN = $(BUILD_DIR)/main.o $(OBJS_NSF)
 OBJS_TEST = $(BUILD_DIR)/UnitTests.o $(BUILD_DIR)/CacheTests.o $(OBJS_NSF)
 
@@ -34,7 +34,7 @@ release:
 $(BUILD_DIR)/$(program_name): $(OBJS_MAIN)
 	$(LD) $(LD_FLAGS) $^ $(LIB_DEP) -o $@
 
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(SRC_DIR)/NetSniffer.hpp $(SRC_DIR)/StreamNetSniffer.hpp
+$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(SRC_DIR)/NetSniffer.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/main.cpp -o $@
 
@@ -52,7 +52,9 @@ $(BUILD_DIR)/TcpStream.o: $(SRC_DIR)/TcpStream.cpp $(SRC_DIR)/TcpStream.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/TcpStream.cpp -o $@
 
-$(SRC_DIR)/CacheStructure.hpp: $(SRC_DIR)/Md5HashedPayload.hpp
+$(SRC_DIR)/ICache.hpp: $(SRC_DIR)/Md5HashedPayload.hpp
+
+$(SRC_DIR)/CacheStructure.hpp: $(SRC_DIR)/Md5HashedPayload.hpp $(SRC_DIR)/ICache.hpp
 $(BUILD_DIR)/CacheStructure.o: $(SRC_DIR)/CacheStructure.cpp $(SRC_DIR)/CacheStructure.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/CacheStructure.cpp -o $@
@@ -70,14 +72,6 @@ $(SRC_DIR)/NetSniffer.cpp: $(SRC_DIR)/TcpIpInternetHeaders.hpp
 $(BUILD_DIR)/NetSniffer.o: $(SRC_DIR)/NetSniffer.cpp $(SRC_DIR)/NetSniffer.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/NetSniffer.cpp -o $@
-
-$(SRC_DIR)/StreamNetSniffer.hpp: $(SRC_DIR)/StreamCacheStructure.hpp $(SRC_DIR)/Reporter.hpp $(SRC_DIR)/TcpStream.hpp
-
-$(SRC_DIR)/StreamNetSniffer.cpp: $(SRC_DIR)/TcpIpInternetHeaders.hpp
-
-$(BUILD_DIR)/StreamNetSniffer.o: $(SRC_DIR)/StreamNetSniffer.cpp $(SRC_DIR)/StreamNetSniffer.hpp
-	$(MK_BUILD_DIR)
-	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/StreamNetSniffer.cpp -o $@
 
 $(BUILD_DIR)/$(test_name): $(OBJS_TEST)
 	$(LD) $(LD_FLAGS) $^ $(LIB_DEP) $(LIB_TEST) -o $@

@@ -5,21 +5,22 @@
 #include <set>
 #include <unordered_map>
 #include <utility>
+#include <string>
 #include "TcpStream.hpp"
+#include "ICache.hpp"
 
-class StreamCache {
+class StreamCache : public ICache {
 private:
-    int _hits;
-    int _misses;
-    int _collisionsNum;
+    int hits;
+    int misses;
+    int collisionsNum;
     
     // sizes in bytes
-    std::size_t _maxSize;
-    std::size_t _size;
-
-public:
-    explicit StreamCache(std::size_t cacheSize);
+    std::size_t maxSize;
+    std::size_t size;
     
+    std::set<TcpStream> tcpStreams;
+        
     struct CacheEntry {
         int freq;
         TcpStream stream;
@@ -30,17 +31,24 @@ public:
         }
     };
     
-    std::set<CacheEntry> _cache;
+    std::set<CacheEntry> cache;
     
     typedef std::set<CacheEntry>::iterator cacheIterType;
     
-    std::unordered_map <size_t, cacheIterType> _itMap;
+    std::unordered_map <size_t, cacheIterType> itMap;
+
+public:
+    explicit StreamCache(std::size_t cacheSize);
+    
+    void printCacheData(void);
     
     std::size_t getSize(void) const;
     
     float getHitRate(void) const;
     
     int getCollisionsNumber(void) const;
+    
+    void add(Md5HashedPayload const &hPayload);
     
     void add(struct in_addr ipSrc, struct in_addr ipDst, 
         u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
@@ -49,8 +57,6 @@ public:
     void clear();
     
     ~StreamCache();
-    
-    std::set<TcpStream> tcpStreams;
 };
 
 

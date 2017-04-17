@@ -27,7 +27,7 @@ public:
   
     TcpStream &operator=(TcpStream const &anotherTcpStream);
     bool operator==(TcpStream const &otherTcpStream) const;
-    bool operator<(TcpStream const & otherStream) const;
+    bool operator<(TcpStream const &otherStream) const;
     
     std::size_t getSize(void) const;
     std::map<u_int, std::vector<unsigned char>> getPackets();

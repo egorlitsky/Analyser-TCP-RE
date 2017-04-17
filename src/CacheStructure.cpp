@@ -13,7 +13,6 @@ int Cache::getCollisionsNumber(void) const {
     return _collisionsNum;
 }
 
-
 void Cache::add(Md5HashedPayload const &hPayload) {
     std::size_t hashKey = hPayload.getHashKey();
 
@@ -57,10 +56,19 @@ void Cache::add(Md5HashedPayload const &hPayload) {
     _size += requiredSize;
 }
 
+void Cache::add(struct in_addr ipSrc, struct in_addr ipDst, 
+        u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
+        unsigned char * payload, unsigned int payloadSize) {
+    return;
+}
+
+void Cache::printCacheData(void) {
+    return;
+}
+
 std::size_t Cache::getSize(void) const {
     return _size;
 }
-
 
 void Cache::clear() {
     _itMap.clear();

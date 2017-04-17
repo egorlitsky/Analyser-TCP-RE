@@ -4,16 +4,18 @@
 #include <pcap.h>
 #include <stdio.h>
 #include "NetSniffer.hpp"
+#include "StreamCacheStructure.hpp"
 #include "TcpIpInternetHeaders.hpp"
 
 
 extern bool withVlan;
+extern bool streamMode;
 
 
 struct Params {
     Reporter *rep;
-    Cache *cache;
-    Params(Reporter *r, Cache *c): rep(r), cache(c) {}
+    ICache *cache;
+    Params(Reporter *r, ICache *c): rep(r), cache(c) {}
 };
 
 
@@ -41,7 +43,7 @@ std::string NetSniffer::getIpAddress(void) const {
 NetSniffer::NetSniffer(std::string const &inputDevName,
                        bool promisModeOn,
                        int timeoutInMs,
-                       Cache *cache):
+                       ICache *cache):
     devInt(NULL),
     compiledFilter(NULL),
     packetCache_(cache),
@@ -78,7 +80,7 @@ NetSniffer::NetSniffer(std::string const &inputDevName,
 }
 
 
-NetSniffer::NetSniffer(const char *inputSavefile, Cache *cache):
+NetSniffer::NetSniffer(const char *inputSavefile, ICache *cache):
     devInt(NULL),
     compiledFilter(NULL),
     packetCache_(cache),
@@ -149,7 +151,11 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
         parsePacket(params, &header, packet);
         cnt += 1;
     }
-     
+    
+    if (streamMode) {
+        p.cache->printCacheData();
+    }
+    
     if (rep != NULL) {
         rep->fin();
     }
@@ -158,12 +164,12 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
 }
 
 
-void NetSniffer::setCache(Cache *cache) {
+void NetSniffer::setCache(ICache *cache) {
     packetCache_ = cache;
 }
 
 
-Cache *NetSniffer::getCache(void) {
+ICache *NetSniffer::getCache(void) {
     return packetCache_;
 }
 
@@ -231,8 +237,21 @@ void parsePacket(u_char *args, const struct pcap_pkthdr *header,
         p->rep->inc();
     }
    
-    Md5HashedPayload HashedPayload(payload, payloadSize, true);
-    p->cache->add(HashedPayload);
+    if (streamMode) {
+        u_int tcpSeq = (u_int)htonl(tcpHeader->tcpSeq);
+
+        struct in_addr ipSrc = ipHeader->ipSrc;
+        struct in_addr ipDst = ipHeader->ipDst;
+
+        u_short tcpSport = ntohs(tcpHeader->tcpSport);
+        u_short tcpDport = ntohs(tcpHeader->tcpDport);
+
+        p->cache->add(ipSrc, ipDst, tcpSport, tcpDport,
+                tcpSeq, payload, payloadSize);
+    } else {
+        Md5HashedPayload HashedPayload(payload, payloadSize, true);
+        p->cache->add(HashedPayload);        
+    }
 
     return;
 }

@@ -19,23 +19,14 @@ private:
     std::size_t maxSize;
     std::size_t size;
     
-    std::set<TcpStream> tcpStreams;
-        
     struct CacheEntry {
-        int freq;
         TcpStream stream;
-
-        CacheEntry(int f, TcpStream &tcpStream): freq(f), stream(tcpStream) {}
-        bool operator<(CacheEntry const & a) const {
-            return freq < a.freq || freq == a.freq && stream < a.stream;
-        }
+        CacheEntry(TcpStream &tcpStream): stream(tcpStream) {}
     };
     
-    std::set<CacheEntry> cache;
+    std::vector<CacheEntry> cache;
     
-    typedef std::set<CacheEntry>::iterator cacheIterType;
-    
-    std::unordered_map <size_t, cacheIterType> itMap;
+    typedef std::vector<CacheEntry>::iterator cacheIterType;
 
 public:
     explicit StreamCache(std::size_t cacheSize);
@@ -53,6 +44,8 @@ public:
     void add(struct in_addr ipSrc, struct in_addr ipDst, 
         u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
         unsigned char * payload, unsigned int payloadSize);
+    
+    bool findPayload(unsigned char * payload, unsigned int payloadSize);
     
     void clear();
     

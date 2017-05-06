@@ -6,10 +6,8 @@
 #include <map>
 #include "Md5HashedPayload.hpp"
 
-// TODO: replace unsigned char* to Md5HashedPayload*
 class TcpStream {
 private:
-    // size in bytes
     std::size_t _size;
 	
 public:

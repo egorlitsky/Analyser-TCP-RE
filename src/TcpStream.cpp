@@ -58,7 +58,7 @@ void TcpStream::addPacketToStream(u_int tcpSeq, unsigned char *payload,
         
         this->_size += req_size;
     } else {
-        std::cout << "TCP stream is full!" << std::endl;
+        //std::cout << "TCP stream is full!" << std::endl;
     }
     
     this->packets.insert (std::pair<u_int, std::vector<unsigned char>>(tcpSeq, payload_vec));

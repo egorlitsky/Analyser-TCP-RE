@@ -4,8 +4,7 @@
 #include "StreamCacheStructure.hpp"
 
 StreamCache::StreamCache(std::size_t cacheSize): hits(0), misses(0), collisionsNum(0),
-            itMap(), cache(), maxSize(cacheSize),
-            size(0) {}
+            cache(), maxSize(cacheSize), size(0) {}
 
 
 float StreamCache::getHitRate(void) const {
@@ -20,35 +19,53 @@ void StreamCache::add(Md5HashedPayload const &hPayload) {
     return;
 }
 
-// TODO: size increase, itMap, + counters
 void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst, 
             u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
             unsigned char * payload, unsigned int payloadSize) {
     
-    cacheIterType oldStream;
     TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport);
     bool isStreamExist = false;
     
+    if (this->findPayload(payload, payloadSize)) {
+        ++hits;
+    } else {
+        ++misses;
+    }
+    
     for (cacheIterType it = cache.begin(); it != cache.end(); ++it) {
         if (it->stream == newStream) {
-            
             isStreamExist = true;
-            oldStream = it;
-            newStream = it->stream;
-            
+            it->stream.addPacketToStream(tcpSeq, payload, payloadSize);
             break;
         }    
     }
 
-    if (isStreamExist) {
+    if (!isStreamExist) {
         newStream.addPacketToStream(tcpSeq, payload, payloadSize);
-        this->cache.erase(oldStream);
-        this->cache.insert(CacheEntry(1, newStream));  
-        
-    } else {
-        newStream.addPacketToStream(tcpSeq, payload, payloadSize);
-        this->cache.insert(CacheEntry(1, newStream));        
+        this->cache.push_back(CacheEntry(newStream));        
     }
+}
+
+bool StreamCache::findPayload(unsigned char * payload, unsigned int payloadSize) {
+    for(cacheIterType it = cache.begin(); it != cache.end(); ++it) {
+        std::string streamData = "";
+        std::string packet((char*)payload);
+        
+        for(auto packet : it->stream.packets) {
+            for (int i = 0; i < packet.second.size(); ++i) {
+                streamData += packet.second[i];
+            }
+        }
+        
+        std::size_t found = streamData.find(packet);
+        if (found!=std::string::npos) {
+            return true;
+        }
+            
+        streamData.clear();
+    }
+    
+    return false;
 }
 
 void StreamCache::printCacheData(void) {
@@ -90,7 +107,6 @@ std::size_t StreamCache::getSize(void) const {
 }
 
 void StreamCache::clear() {
-    itMap.clear();
     for (cacheIterType it = cache.begin(); it != cache.end(); ++it) {
         it->stream.~TcpStream();
     }

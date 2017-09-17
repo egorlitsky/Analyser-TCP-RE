@@ -17,7 +17,9 @@ public:
     u_short	tcpSport;
     u_short	tcpDport;
 	
-    std::map<u_int, std::vector<unsigned char>> packets;
+    std::map<u_int, std::string> packets;
+
+    std::string streamData;
     
     TcpStream(struct in_addr ipSrc, struct in_addr ipDst, 
                      u_short tcpSport, u_short	tcpDport);
@@ -28,8 +30,8 @@ public:
     bool operator<(TcpStream const &otherStream) const;
     
     std::size_t getSize(void) const;
-    std::map<u_int, std::vector<unsigned char>> getPackets();
-    std::map<u_int, std::vector<unsigned char>>::iterator get_first_packet();
+    std::map<u_int, std::string> getPackets();
+    std::map<u_int, std::string>::iterator get_first_packet();
     void addPacketToStream(u_int tcpSeq, unsigned char*,
             unsigned int size);
 };

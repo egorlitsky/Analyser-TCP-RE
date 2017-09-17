@@ -13,6 +13,8 @@ TcpStream::TcpStream(struct in_addr ipSrc, struct in_addr ipDst,
     this->tcpDport = tcpDport;
     
     this->_size = 0;
+
+    this->streamData = "";
 }
 
 TcpStream &TcpStream::operator=(TcpStream const& anotherTcpStream) {
@@ -42,38 +44,41 @@ bool TcpStream::operator<(TcpStream const & otherStream) const {
     return true;
 }
 
-std::map<u_int, std::vector<unsigned char>> TcpStream::getPackets() {
+std::map<u_int, std::string> TcpStream::getPackets() {
     return this->packets;
 }
 
 void TcpStream::addPacketToStream(u_int tcpSeq, unsigned char *payload,
         unsigned int req_size) {
 
-    std::vector<unsigned char> payload_vec;
-    
     if (streamSize >= req_size + _size) {
+        std::string payload_str = "";
         for (int i = 0; i < req_size; ++i) {
-            payload_vec.push_back(payload[i]);
+            payload_str += payload[i];
         }
         
+        this->packets.insert (std::pair<u_int, std::string>(tcpSeq, payload_str));
         this->_size += req_size;
+
+        this->streamData.clear();
+        for(auto packet : this->packets) {
+            this->streamData += packet.second;
+        }
     } else {
-        //std::cout << "TCP stream is full!" << std::endl;
+        //std::cout << "[WARN] TCP stream is full!" << std::endl;
     }
-    
-    this->packets.insert (std::pair<u_int, std::vector<unsigned char>>(tcpSeq, payload_vec));
 }
 
 std::size_t TcpStream::getSize(void) const {
     return _size;
 }
 
-std::map<u_int, std::vector<unsigned char>>::iterator TcpStream::get_first_packet() {
+std::map<u_int, std::string>::iterator TcpStream::get_first_packet() {
     return this->packets.begin();
 }
 
 TcpStream::~TcpStream() {
-    typedef std::map<u_int, std::vector<unsigned char>>::iterator iter_type;
+    typedef std::map<u_int, std::string>::iterator iter_type;
 
     for (iter_type packet_iter = packets.begin(); packet_iter != packets.end(); packet_iter++) {
         packet_iter->second.clear();
@@ -81,4 +86,5 @@ TcpStream::~TcpStream() {
         packets.erase(packet_iter); 
     }
     packets.clear();
+    streamData.clear();
 }

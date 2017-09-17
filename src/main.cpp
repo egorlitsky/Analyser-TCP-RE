@@ -11,18 +11,19 @@
 
 
 const bool PROMICIOUS_MODE  = false;
-const int TIMEOUT_MS  = 100;
+const int  TIMEOUT_MS       = 100;
 
-
-bool withVlan = false;
+bool withVlan   = false;
 bool streamMode = false;
+bool debugMode  = false;
+
 std::size_t streamSize;
 
 
 int main(int argc, char **argv) {
     try {
 
-        TCLAP::CmdLine cmd("Description message", ' ', "0.9");
+        TCLAP::CmdLine cmd("Description message", ' ', "1.2");
 
         TCLAP::ValueArg<std::size_t> cacheSizeArg("", "cache_size",
                                           "Sets size of cache",
@@ -54,8 +55,12 @@ int main(int argc, char **argv) {
                                           false, 768, "# of packets to capture");
 
         TCLAP::SwitchArg streamArg("", "streams",
-                         "Separates all packets on streams and writes it in the file",
-                         cmd, false);
+                         "Separates all packets into streams and computes hit-rate for Flow-based"
+                         " approach.", cmd, false);
+
+        TCLAP::SwitchArg debugArg("", "debug",
+                 "Enables Debug mode and writes data to text-file for each stream (TCP-flow)",
+                 cmd, false);
         
         TCLAP::ValueArg<std::size_t> streamSizeArg("", "stream_size",
                                   "Sets size of one stream",
@@ -100,6 +105,7 @@ int main(int argc, char **argv) {
         ICache* ic;
         
         streamMode = streamArg.getValue();
+        debugMode  = debugArg.getValue();
         if (streamMode) {
             ic = new StreamCache(cacheSize);
         } else {
@@ -119,7 +125,7 @@ int main(int argc, char **argv) {
             snf.setFilter(filterText);
             snf.setLoop(&rep, numberOfPackets);
             out << "Hit rate: " << ic->getHitRate() << std::endl;
-            out << "Collisions' number: " << ic->getCollisionsNumber()
+            out << "Collisions number: " << ic->getCollisionsNumber()
                 << std::endl;
         } else {
             out << "Capturing from files" << std::endl;
@@ -143,7 +149,7 @@ int main(int argc, char **argv) {
                 out << "   Number of captured packets: " << packet_count
                     << std::endl;
                 out << "   Hit rate after: " << ic->getHitRate() << std::endl;
-                out << "   Collisions' number after: "
+                out << "   Collisions number after: "
                     << ic->getCollisionsNumber() << std::endl;
                 out << "   Accuired time, secs : "
                     << difftime(timer2, timer1) << std::endl;

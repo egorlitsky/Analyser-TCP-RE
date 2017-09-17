@@ -10,6 +10,7 @@
 
 extern bool withVlan;
 extern bool streamMode;
+extern bool debugMode;
 
 
 struct Params {
@@ -152,7 +153,7 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
         cnt += 1;
     }
     
-    if (streamMode) {
+    if (streamMode && debugMode) {
         p.cache->printCacheData();
     }
     

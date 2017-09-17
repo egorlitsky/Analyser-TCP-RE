@@ -24,6 +24,14 @@ private:
         CacheEntry(TcpStream &tcpStream): stream(tcpStream) {}
     };
     
+    struct HitData {
+        int streamIndex;
+        int dataOffset;
+        std::size_t dataSize;
+        HitData(int index, int offset, std::size_t size):
+            streamIndex(index), dataOffset(offset), dataSize(size) {}
+    };
+
     std::vector<CacheEntry> cache;
     
     typedef std::vector<CacheEntry>::iterator cacheIterType;
@@ -45,7 +53,7 @@ public:
         u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
         unsigned char * payload, unsigned int payloadSize);
     
-    bool findPayload(unsigned char * payload, unsigned int payloadSize);
+    HitData findPayload(unsigned char * payload, unsigned int payloadSize);
     
     void clear();
     

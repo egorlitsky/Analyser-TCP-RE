@@ -13,7 +13,7 @@ BUILD_DIR = bin
 
 MK_BUILD_DIR = mkdir -p ./$(BUILD_DIR)
 
-OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/TcpStream.o $(BUILD_DIR)/CacheStructure.o $(BUILD_DIR)/StreamCacheStructure.o $(BUILD_DIR)/Reporter.o
+OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR)/TcpStream.o $(BUILD_DIR)/CacheStructure.o $(BUILD_DIR)/SubStringUtils.o $(BUILD_DIR)/StreamCacheStructure.o $(BUILD_DIR)/Reporter.o
 OBJS_MAIN = $(BUILD_DIR)/main.o $(OBJS_NSF)
 OBJS_TEST = $(BUILD_DIR)/UnitTests.o $(BUILD_DIR)/CacheTests.o $(OBJS_NSF)
 
@@ -52,6 +52,10 @@ $(BUILD_DIR)/TcpStream.o: $(SRC_DIR)/TcpStream.cpp $(SRC_DIR)/TcpStream.hpp
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/TcpStream.cpp -o $@
 
+$(BUILD_DIR)/SubStringUtils.o: $(SRC_DIR)/SubStringUtils.cpp $(SRC_DIR)/SubStringUtils.hpp
+	$(MK_BUILD_DIR)
+	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/SubStringUtils.cpp -o $@
+
 $(SRC_DIR)/ICache.hpp: $(SRC_DIR)/Md5HashedPayload.hpp
 
 $(SRC_DIR)/CacheStructure.hpp: $(SRC_DIR)/Md5HashedPayload.hpp $(SRC_DIR)/ICache.hpp
@@ -59,7 +63,7 @@ $(BUILD_DIR)/CacheStructure.o: $(SRC_DIR)/CacheStructure.cpp $(SRC_DIR)/CacheStr
 	$(MK_BUILD_DIR)
 	$(CC) $(CC_FLAGS) -c $(SRC_DIR)/CacheStructure.cpp -o $@
 	
-$(SRC_DIR)/StreamCacheStructure.hpp: $(SRC_DIR)/TcpStream.hpp
+$(SRC_DIR)/StreamCacheStructure.hpp: $(SRC_DIR)/TcpStream.hpp $(SRC_DIR)/SubStringUtils.hpp
 
 $(BUILD_DIR)/StreamCacheStructure.o: $(SRC_DIR)/StreamCacheStructure.cpp $(SRC_DIR)/StreamCacheStructure.hpp
 	$(MK_BUILD_DIR)

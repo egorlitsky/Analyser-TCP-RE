@@ -48,8 +48,8 @@ std::map<u_int, std::string> TcpStream::getPackets() {
     return this->packets;
 }
 
-void TcpStream::addPacketToStream(u_int tcpSeq, unsigned char *payload,
-        unsigned int req_size) {
+void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
+        const unsigned int req_size) {
 
     if (streamSize >= req_size + _size) {
         std::string payload_str = "";
@@ -65,6 +65,7 @@ void TcpStream::addPacketToStream(u_int tcpSeq, unsigned char *payload,
             this->streamData += packet.second;
         }
     } else {
+        return;
         //std::cout << "[WARN] TCP stream is full!" << std::endl;
     }
 }

@@ -19,8 +19,10 @@ bool debugMode  = false;
 
 std::size_t streamSize;
 
+std::string searchType;
 
 int main(int argc, char **argv) {
+
     try {
 
         TCLAP::CmdLine cmd("Description message", ' ', "1.2");
@@ -66,11 +68,16 @@ int main(int argc, char **argv) {
                                   "Sets size of one stream",
                                   false, 1, "stream size, in MB");
         
+        TCLAP::ValueArg<std::string> searchTypeArg("s", "search_type",
+                                       "Sets the method of substring search: find, custom_str_str, "
+                                       "boyer_moore, knuth_morris_pratt", false, "", "preferred method");
+
         cmd.add(cacheSizeArg);
         cmd.add(streamSizeArg);
         cmd.add(ipAddrArg);
         cmd.xorAdd(devArg, filenamesArg);
         cmd.add(outputArg);
+        cmd.add(searchTypeArg);
         cmd.add(packetNumArg);
         cmd.parse(argc, argv);
 
@@ -101,6 +108,17 @@ int main(int argc, char **argv) {
         } else {
             buf = std::cout.rdbuf();
         }
+
+        searchType = searchTypeArg.getValue();
+        if (searchType == "") {
+            searchType = SEARCH_CUSTOM_STR_STR;
+        }
+
+        if (searchType != SEARCH_FIND && searchType != SEARCH_CUSTOM_STR_STR &&
+                searchType != SEARCH_BOYER_MOORE && searchType != SEARCH_KMP) {
+            throw std::runtime_error("Search method is incorrect!");
+        }
+
         std::ostream out(buf);
         ICache* ic;
         
@@ -111,7 +129,7 @@ int main(int argc, char **argv) {
         } else {
             ic = new Cache(cacheSize);
         }
-            
+
         streamSize = streamSizeArg.getValue() * 1024 * 1024;
 
         if (isOnline) {

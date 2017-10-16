@@ -2,12 +2,18 @@
 #define STREAM_CACHE_STRUCTURE_HPP
 
 
+#define SEARCH_FIND           "find"
+#define SEARCH_CUSTOM_STR_STR "custom_str_str"
+#define SEARCH_BOYER_MOORE    "boyer_moore"
+#define SEARCH_KMP            "knuth_morris_pratt"
+
 #include <set>
 #include <unordered_map>
 #include <utility>
 #include <string>
 #include "TcpStream.hpp"
 #include "ICache.hpp"
+#include "SubStringUtils.hpp"
 
 class StreamCache : public ICache {
 private:
@@ -53,7 +59,7 @@ public:
         u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
         unsigned char * payload, unsigned int payloadSize);
     
-    HitData findPayload(unsigned char * payload, unsigned int payloadSize);
+    HitData findPayload(const unsigned char * payload, const unsigned int payloadSize);
     
     void clear();
     

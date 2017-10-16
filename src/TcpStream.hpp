@@ -32,8 +32,8 @@ public:
     std::size_t getSize(void) const;
     std::map<u_int, std::string> getPackets();
     std::map<u_int, std::string>::iterator get_first_packet();
-    void addPacketToStream(u_int tcpSeq, unsigned char*,
-            unsigned int size);
+    void addPacketToStream(u_int tcpSeq, const unsigned char*,
+            const unsigned int size);
 };
 
 #endif

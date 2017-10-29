@@ -48,31 +48,31 @@ int custom_str_str(const unsigned char * str1, const unsigned char * str2, size_
     unsigned char *cp_end = cp + slen;
 
     while (cp < cp_end) {
-        if (*cp) {
-            unsigned char ind = *cp;
-            if((ind = index_header_end[ind])) {
-
-                do {
-                    unsigned char pos_in_len = sorted_index[ind];
-                    s1 = cp - pos_in_len;
-
-                    if((unsigned char*)s1 >= str1) {
-                        s2 = (unsigned char*) str2;
-                        while (*s2 && !(*s1 ^ *s2)) {
-                            s1++, s2++;
-                        }
-
-                        if (!*s2) {
-                            return int((unsigned char*)(cp - pos_in_len) - str1);
-                        }
-                    }
-                }
-                while(ind = last_char[ind]);
-            }
-            cp += len;
-        } else {
+        if (!*cp) {
             return -1;
         }
+
+        unsigned char ind = *cp;
+        if((ind = index_header_end[ind])) {
+
+            do {
+                unsigned char pos_in_len = sorted_index[ind];
+                s1 = cp - pos_in_len;
+
+                if((unsigned char*)s1 >= str1) {
+                    s2 = (unsigned char*) str2;
+                    while (*s2 && !(*s1 ^ *s2)) {
+                        s1++, s2++;
+                    }
+
+                    if (!*s2) {
+                        return int((unsigned char*)(cp - pos_in_len) - str1);
+                    }
+                }
+            }
+            while(ind = last_char[ind]);
+        }
+        cp += len;
     }
     return -1;
 }
@@ -249,7 +249,7 @@ int boyer_moore(const std::string &haystack, const std::string &needle) {
     }
 }
 
-int knuth_morris_pratt(const std::string text, const std::string pattern) {
+int knuth_morris_pratt(const std::string &text, const std::string &pattern) {
     std::vector <int> T(pattern.size() + 1, -1);
     int matches;
 

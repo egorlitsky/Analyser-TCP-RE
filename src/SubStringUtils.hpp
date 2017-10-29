@@ -34,7 +34,7 @@ size_t search_boyer_moore(const unsigned char* haystack, size_t haystack_length,
 
 int boyer_moore(const std::string &needle, const std::string &haystack);
 
-int knuth_morris_pratt(const std::string text, const std::string pattern);
+int knuth_morris_pratt(const std::string &text, const std::string &pattern);
 
 #endif
 

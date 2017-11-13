@@ -41,6 +41,8 @@ private:
     std::vector<CacheEntry> cache;
     
     typedef std::vector<CacheEntry>::iterator cacheIterType;
+    
+    std::pair <int, int> searchResult; 
 
 public:
     explicit StreamCache(std::size_t cacheSize);
@@ -60,6 +62,8 @@ public:
         unsigned char * payload, unsigned int payloadSize);
     
     HitData findPayload(const unsigned char * payload, const unsigned int payloadSize);
+    
+    void runThread(int threadId, const unsigned char * payload);
     
     void clear();
     

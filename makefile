@@ -17,7 +17,7 @@ OBJS_NSF = $(BUILD_DIR)/NetSniffer.o $(BUILD_DIR)/Md5HashedPayload.o $(BUILD_DIR
 OBJS_MAIN = $(BUILD_DIR)/main.o $(OBJS_NSF)
 OBJS_TEST = $(BUILD_DIR)/UnitTests.o $(BUILD_DIR)/CacheTests.o $(OBJS_NSF)
 
-LIB_DEP = -lpcap -lcrypto
+LIB_DEP = -lpcap -lcrypto -pthread
 LIB_TEST = -lpthread -lgtest -lgtest_main -L/usr/lib/
 
 

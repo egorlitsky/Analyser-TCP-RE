@@ -2,7 +2,7 @@
 
 int custom_str_str(const unsigned char * str1, const unsigned char * str2, size_t slen) {
     unsigned char max_len = 140;
-    
+
     if (!*str2) {
         return -1;
     }
@@ -48,9 +48,6 @@ int custom_str_str(const unsigned char * str1, const unsigned char * str2, size_
     unsigned char *cp_end = cp + slen;
 
     while (cp < cp_end) {
-        if (!*cp) {
-            return -1;
-        }
 
         unsigned char ind = *cp;
         if((ind = index_header_end[ind])) {

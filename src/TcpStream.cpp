@@ -2,6 +2,7 @@
 #include "TcpStream.hpp"
 
 extern size_t streamSize;
+extern int    chunkSize;
 
 TcpStream::TcpStream(struct in_addr ipSrc, struct in_addr ipDst, 
                      u_short tcpSport, u_short	tcpDport)
@@ -51,22 +52,46 @@ std::map<u_int, std::string> TcpStream::getPackets() {
 void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
         const unsigned int req_size) {
 
-    if (streamSize >= req_size + _size) {
-        std::string payload_str = "";
-        for (int i = 0; i < req_size; ++i) {
-            payload_str += payload[i];
-        }
-        
-        this->packets.insert (std::pair<u_int, std::string>(tcpSeq, payload_str));
-        this->_size += req_size;
+    if (streamSize >= req_size + _size) {        
+        if (chunkSize) {
+            std::string payload_str = "";
+            for (int i = 0; i < req_size; ++i) {
+                payload_str += payload[i];
+            }
+            
+            int chunkAmount = req_size / chunkSize;
+            int lastChunkSize = req_size - (chunkAmount * chunkSize);
+            
+            for (int i = 0; i < chunkAmount; ++i) {
+                std::string chunk(payload_str.substr(i * chunkSize, (i * chunkSize) + chunkSize));
+                Md5HashedPayload *hashedPayload = new Md5HashedPayload((unsigned char *) chunk.c_str(), chunkSize, false);
+                this->hashedPayloads.insert(std::pair<std::size_t, u_int>(hashedPayload->getHashKey(), tcpSeq));
+            }
 
-        this->streamData.clear();
-        for(auto packet : this->packets) {
-            this->streamData += packet.second;
+            if (lastChunkSize) {
+                std::string lastChunk(payload_str.substr(chunkAmount * chunkSize, lastChunkSize));
+                Md5HashedPayload *hashedPayload = new Md5HashedPayload((unsigned char *) lastChunk.c_str(), chunkSize, false);
+                this->hashedPayloads.insert(std::pair<std::size_t, u_int>(hashedPayload->getHashKey(), tcpSeq));
+            } 
+            
+        } else {
+            std::string payload_str = "";
+            for (int i = 0; i < req_size; ++i) {
+                payload_str += payload[i];
+            }
+            
+            this->packets.insert (std::pair<u_int, std::string>(tcpSeq, payload_str));
+            this->_size += req_size;
+
+            this->streamData.clear();
+            for(auto packet : this->packets) {
+                this->streamData += packet.second;
+            }
+            
         }
     } else {
         return;
-        //std::cout << "[WARN] TCP stream is full!" << std::endl;
+        // TODO: cache is full -> delete oldest stream
     }
 }
 

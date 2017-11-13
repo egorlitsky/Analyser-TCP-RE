@@ -9,6 +9,7 @@
 #include "StreamCacheStructure.hpp"
 #include "CacheStructure.hpp"
 
+#define STREAM_SIZE_MB 50
 
 const bool PROMICIOUS_MODE  = false;
 const int  TIMEOUT_MS       = 100;
@@ -18,60 +19,68 @@ bool streamMode = false;
 bool debugMode  = false;
 
 std::size_t streamSize;
-
 std::string searchType;
+
+int         threadsAmount;   // enables multi-thread substring search, if specified
+int         chunkSize;       // enables chunk-based caching, if specified
 
 int main(int argc, char **argv) {
 
     try {
 
-        TCLAP::CmdLine cmd("Description message", ' ', "1.2");
+        TCLAP::CmdLine cmd("Description message", ' ', "1.3");
 
         TCLAP::ValueArg<std::size_t> cacheSizeArg("", "cache_size",
-                                          "Sets size of cache",
-                                          false, 8, "cache size, in MB");
+                            "Sets size of cache",
+                            false, 8, "cache size, in MB");
 
         TCLAP::ValueArg<std::string> ipAddrArg(
-                        "", "ip_addr", "Sets ip address of destination", false,
-                        "", "ip address of destination"
-                        );
+                            "", "ip_addr", "Sets ip address of destination", false,
+                            "", "ip address of destination");
 
         TCLAP::ValueArg<std::string> devArg("d", "device",
-                                            "Sets device to capture from",
-                                            true, "wlan0", "device name");
+                            "Sets device to capture from",
+                            true, "wlan0", "device name");
+        
         TCLAP::MultiArg<std::string> filenamesArg(
-                            "f", "filename", "Gets pcap filenames",
-                            true, "filenames"
-                            );
+                            "f", "filename", "Gets pcap filenames", true, "filenames");
 
         TCLAP::ValueArg<std::string> outputArg("o", "output_file",
-                                               "Sets file to write info",
-                                               false, "", "output filename");
+                            "Sets file to write info",
+                            false, "", "output filename");
 
         TCLAP::SwitchArg vlanArg("", "vlan",
-                                 "Indicates that packets contain vlan header",
-                                 cmd, false);
+                            "Indicates that packets contain vlan header",
+                            cmd, false);
 
         std::string descr = "Sets number of packets to capture from online int";
         TCLAP::ValueArg<int> packetNumArg("n", "packet_number", descr.c_str(),
-                                          false, 768, "# of packets to capture");
+                            false, 768, "# of packets to capture");
 
         TCLAP::SwitchArg streamArg("", "streams",
-                         "Separates all packets into streams and computes hit-rate for Flow-based"
-                         " approach.", cmd, false);
+                            "Separates all packets into streams and computes hit-rate for Flow-based"
+                            " approach.", cmd, false);
 
         TCLAP::SwitchArg debugArg("", "debug",
-                 "Enables Debug mode and writes data to text-file for each stream (TCP-flow)",
-                 cmd, false);
+                            "Enables Debug mode and writes data to text-file for each stream (TCP-flow)",
+                            cmd, false);
         
         TCLAP::ValueArg<std::size_t> streamSizeArg("", "stream_size",
-                                  "Sets size of one stream",
-                                  false, 1, "stream size, in MB");
+                            "Sets size of one stream",
+                            false, STREAM_SIZE_MB, "stream size, in MB");
         
         TCLAP::ValueArg<std::string> searchTypeArg("s", "search_type",
-                                       "Sets the method of substring search: find, custom_str_str, "
-                                       "boyer_moore, knuth_morris_pratt", false, "", "preferred method");
+                            "Sets the method of payload-search: find, custom_str_str (default), "
+                            "boyer_moore, knuth_morris_pratt", false, "", "preferred search-method");
 
+        TCLAP::ValueArg<int> threadsAmountArg("t", "threads_amount",
+                            "Count of threads required for payload-search. One by default.",
+                            false, 1, "# of threads for payload-search");
+
+        TCLAP::ValueArg<int> chunkSizeArg("c", "chunk_size",
+                            "Size of chunk. Enables chunk-based caching algorithm.",
+                            false, 0, "chunk size for chunk-based algorithm");
+        
         cmd.add(cacheSizeArg);
         cmd.add(streamSizeArg);
         cmd.add(ipAddrArg);
@@ -79,6 +88,8 @@ int main(int argc, char **argv) {
         cmd.add(outputArg);
         cmd.add(searchTypeArg);
         cmd.add(packetNumArg);
+        cmd.add(threadsAmountArg);
+        cmd.add(chunkSizeArg);
         cmd.parse(argc, argv);
 
 
@@ -119,6 +130,13 @@ int main(int argc, char **argv) {
             throw std::runtime_error("Search method is incorrect!");
         }
 
+        threadsAmount = threadsAmountArg.getValue();
+        chunkSize     = chunkSizeArg.getValue();
+        
+        if (threadsAmount > 1 && chunkSize != 0) {
+            throw std::runtime_error("Multi-thread mode is not compatible with chunk-based algorithm");
+        }
+        
         std::ostream out(buf);
         ICache* ic;
         

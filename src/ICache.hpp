@@ -13,6 +13,8 @@ public:
     
     virtual void  printCacheData(void)                              = 0;
     
+    virtual void  printStreamInfo(void)                             = 0;
+
     virtual float getHitRate(void) const                            = 0;
     
     virtual int   getCollisionsNumber(void) const                   = 0;

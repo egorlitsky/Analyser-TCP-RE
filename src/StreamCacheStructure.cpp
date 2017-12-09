@@ -2,11 +2,20 @@
 #include <sstream>
 #include <thread>
 #include <list>
+#include <mutex>
 #include "StreamCacheStructure.hpp"
+
+#define STREAM_INFO_FILE_NAME      "streamInfo.txt"
+#define THREAD_INFO_FILE_NAME      "threadInfo.txt"
 
 extern std::string searchType;
 extern int         threadsAmount;
 extern int         chunkSize;
+extern bool        debugMode;
+
+std::ofstream threadInfoFile(THREAD_INFO_FILE_NAME, std::ios::binary);
+
+std::mutex fileMutex;
 
 StreamCache::StreamCache(std::size_t cacheSize): hits(0), misses(0), collisionsNum(0),
             cache(), maxSize(cacheSize), size(0) {}
@@ -52,12 +61,24 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
 
 void StreamCache::runThread(int threadId, const unsigned char * payload) {
     
-    for (int i = threadsAmount - (threadsAmount - threadId); i < this->cache.size(); i += threadsAmount) {
+    for (int i = 0; i < this->cache.size(); ++i) {
         
         if (this->searchResult.first != -1) {
             return;
         }
         
+        if (this->cache[i].stream.isBusy) {
+            continue;
+        } else {
+            this->cache[i].stream.isBusy = true;
+        }
+
+        if (debugMode) {
+            fileMutex.lock();
+            threadInfoFile << "Thread " << threadId << " operates with stream " << i << std::endl;
+            fileMutex.unlock();
+        }
+
         std::size_t streamSize = this->cache[i].stream.streamData.size();
         int offset = -1;
 
@@ -116,13 +137,23 @@ StreamCache::HitData StreamCache::findPayload(const unsigned char * payload, con
         for (int i = 0; i < threadsAmount; ++i) {
             threads.push_back(std::thread(&StreamCache::runThread, this, i, payload));
         }
-        
+
+        if (debugMode) {
+            fileMutex.lock();
+            threadInfoFile << "========== New packet search ==========" << std::endl << std::endl;
+            fileMutex.unlock();
+        }
+
         auto thread = threads.begin();
         while (thread != threads.end()) {
            thread->join();
            thread++;
         }
-        
+
+        for(cacheIterType it = cache.begin(); it != cache.end(); ++it) {
+            it->stream.isBusy = false;
+        }
+
         return HitData(this->searchResult.first, this->searchResult.second, payloadSize);
 
     } else if (!chunkSize) {
@@ -244,6 +275,18 @@ void StreamCache::printCacheData(void) {
     }
 }
 
+void StreamCache::printStreamInfo(void) {
+    int streamIndex = 0;
+    std::ofstream streamInfoFile(STREAM_INFO_FILE_NAME, std::ios::binary);
+
+    for(cacheIterType it = cache.begin(); it != cache.end(); ++it, ++streamIndex) {
+        streamInfoFile << "Steam " << streamIndex << " contains "
+                << it->stream.packets.size() << " packets" << std::endl;
+    }
+
+    streamInfoFile.close();
+}
+
 std::size_t StreamCache::getSize(void) const {
     return size;
 }
@@ -253,5 +296,6 @@ void StreamCache::clear() {
 }
 
 StreamCache::~StreamCache() {
+    threadInfoFile.close();
     cache.clear();
 }

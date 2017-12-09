@@ -23,6 +23,8 @@ public:
     
     std::map<std::size_t, u_int> hashedPayloads;
     
+    volatile bool isBusy;
+
     TcpStream(struct in_addr ipSrc, struct in_addr ipDst, 
                      u_short tcpSport, u_short	tcpDport);
     ~TcpStream();

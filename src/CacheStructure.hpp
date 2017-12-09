@@ -38,6 +38,7 @@ private:
 public:
     explicit Cache(std::size_t cacheSize);
     void printCacheData(void);
+    void printStreamInfo(void);
     std::size_t getSize(void) const;
     float getHitRate(void) const;
     int getCollisionsNumber(void) const;

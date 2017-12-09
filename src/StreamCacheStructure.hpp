@@ -49,6 +49,8 @@ public:
     
     void printCacheData(void);
     
+    void printStreamInfo(void);
+
     std::size_t getSize(void) const;
     
     float getHitRate(void) const;

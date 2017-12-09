@@ -155,6 +155,7 @@ std::uint64_t NetSniffer::captureAll(Reporter *rep) const {
     
     if (streamMode && debugMode) {
         p.cache->printCacheData();
+        p.cache->printStreamInfo();
     }
     
     if (rep != NULL) {

@@ -66,6 +66,10 @@ void Cache::printCacheData(void) {
     return;
 }
 
+void Cache::printStreamInfo(void) {
+    return;
+}
+
 std::size_t Cache::getSize(void) const {
     return _size;
 }

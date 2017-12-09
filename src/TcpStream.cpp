@@ -13,7 +13,9 @@ TcpStream::TcpStream(struct in_addr ipSrc, struct in_addr ipDst,
     this->tcpSport = tcpSport;
     this->tcpDport = tcpDport;
     
-    this->_size = 0;
+    this->_size  = 0;
+
+    this->isBusy = false;
 
     this->streamData = "";
 }

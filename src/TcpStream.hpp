@@ -18,15 +18,21 @@ public:
     u_short	tcpDport;
 	
     std::map<u_int, std::string> packets;
+    
+    std::string fileName;
+    
+    std::map<u_int, std::pair<int, int>> filePackets;
 
     std::string streamData;
     
     std::map<std::size_t, u_int> hashedPayloads;
     
     volatile bool isBusy;
+    
+    bool isFile;
 
     TcpStream(struct in_addr ipSrc, struct in_addr ipDst, 
-                     u_short tcpSport, u_short	tcpDport);
+                     u_short tcpSport, u_short	tcpDport, bool isFile);
     ~TcpStream();
   
     TcpStream &operator=(TcpStream const &anotherTcpStream);
@@ -34,6 +40,7 @@ public:
     bool operator<(TcpStream const &otherStream) const;
     
     std::size_t getSize(void) const;
+    std::string getStreamData();
     std::map<u_int, std::string> getPackets();
     std::map<u_int, std::string>::iterator get_first_packet();
     void addPacketToStream(u_int tcpSeq, const unsigned char*,

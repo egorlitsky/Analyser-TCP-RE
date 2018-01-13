@@ -12,10 +12,12 @@ extern std::string searchType;
 extern int         threadsAmount;
 extern int         chunkSize;
 extern bool        debugMode;
+extern int         fileStreamsAmount;
 
 std::ofstream threadInfoFile(THREAD_INFO_FILE_NAME, std::ios::binary);
 
-std::mutex fileMutex;
+std::mutex fileMutex;              // mutex to write Stream info to file correctly
+int        fileStreamsCounter = 0; // current number of File streams
 
 StreamCache::StreamCache(std::size_t cacheSize): hits(0), misses(0), collisionsNum(0),
             cache(), maxSize(cacheSize), size(0) {}
@@ -37,8 +39,13 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
             u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
             unsigned char * payload, unsigned int payloadSize) {
     
-    TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport);
+    bool isFileStream = ((fileStreamsCounter < fileStreamsAmount) && payloadSize) ? true : false;
+    TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport, isFileStream);
     bool isStreamExist = false;
+    
+    if (isFileStream) {
+        ++fileStreamsCounter;
+    }
     
     if (this->findPayload(payload, payloadSize).dataOffset != -1) {
         ++hits;
@@ -47,6 +54,11 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
         for (cacheIterType it = cache.begin(); it != cache.end(); ++it) {
             if (it->stream == newStream) {
                 isStreamExist = true;
+                
+                if (isFileStream) {
+                    --fileStreamsCounter;
+                }
+                
                 it->stream.addPacketToStream(tcpSeq, payload, payloadSize);
                 break;
             }
@@ -79,13 +91,15 @@ void StreamCache::runThread(int threadId, const unsigned char * payload) {
             fileMutex.unlock();
         }
 
-        std::size_t streamSize = this->cache[i].stream.streamData.size();
+        std::string streamData = this->cache[i].stream.getStreamData();
+        std::size_t streamSize = streamData.length();
+        
         int offset = -1;
 
         if (searchType == SEARCH_CUSTOM_STR_STR) {
 
             try {
-                offset = custom_str_str((unsigned char*) this->cache[i].stream.streamData.c_str(), payload, streamSize);
+                offset = custom_str_str((unsigned char*) streamData.c_str(), payload, streamSize);
             } catch (...) {
                 std::cout << "[ERROR] Exception during runThread() execution";
             }
@@ -98,7 +112,7 @@ void StreamCache::runThread(int threadId, const unsigned char * payload) {
         
         if (searchType == SEARCH_FIND) {
             std::string packet((char*)payload);
-            offset = this->cache[i].stream.streamData.find(packet);
+            offset = streamData.find(packet);
 
             if (offset != std::string::npos) {
                 this->searchResult = std::make_pair(i, offset);
@@ -108,7 +122,7 @@ void StreamCache::runThread(int threadId, const unsigned char * payload) {
 
         if (searchType == SEARCH_BOYER_MOORE) {
             std::string packet((char*)payload);
-            offset = boyer_moore(this->cache[i].stream.streamData, packet);
+            offset = boyer_moore(streamData, packet);
 
             if (offset != -1) {
                 this->searchResult = std::make_pair(i, offset);
@@ -118,7 +132,7 @@ void StreamCache::runThread(int threadId, const unsigned char * payload) {
 
         if (searchType == SEARCH_KMP) {
             std::string packet((char*)payload);
-            offset = knuth_morris_pratt(this->cache[i].stream.streamData, packet);
+            offset = knuth_morris_pratt(streamData, packet);
 
             if (offset != -1) {
                 this->searchResult = std::make_pair(i, offset);

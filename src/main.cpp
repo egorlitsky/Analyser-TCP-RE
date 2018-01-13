@@ -21,8 +21,9 @@ bool debugMode  = false;
 std::size_t streamSize;
 std::string searchType;
 
-int         threadsAmount;   // enables multi-thread substring search, if specified
-int         chunkSize;       // enables chunk-based caching, if specified
+int         threadsAmount;      // enables multi-thread substring search, if specified
+int         chunkSize;          // enables chunk-based caching, if specified
+int         fileStreamsAmount;  // enables File streams
 
 int main(int argc, char **argv) {
 
@@ -80,6 +81,10 @@ int main(int argc, char **argv) {
         TCLAP::ValueArg<int> chunkSizeArg("c", "chunk_size",
                             "Size of chunk. Enables chunk-based caching algorithm.",
                             false, 0, "chunk size for chunk-based algorithm");
+
+        TCLAP::ValueArg<int> fileStreamsAmountArg("a", "file_streams_amount",
+                            "Total amount of File TCP streams (stream data will be stored in file).",
+                            false, 0, "amount of File streams");
         
         cmd.add(cacheSizeArg);
         cmd.add(streamSizeArg);
@@ -90,6 +95,7 @@ int main(int argc, char **argv) {
         cmd.add(packetNumArg);
         cmd.add(threadsAmountArg);
         cmd.add(chunkSizeArg);
+        cmd.add(fileStreamsAmountArg);
         cmd.parse(argc, argv);
 
 
@@ -130,8 +136,9 @@ int main(int argc, char **argv) {
             throw std::runtime_error("Search method is incorrect!");
         }
 
-        threadsAmount = threadsAmountArg.getValue();
-        chunkSize     = chunkSizeArg.getValue();
+        threadsAmount     = threadsAmountArg.getValue();
+        chunkSize         = chunkSizeArg.getValue();
+        fileStreamsAmount = fileStreamsAmountArg.getValue();
         
         if (threadsAmount > 1 && chunkSize != 0) {
             throw std::runtime_error("Multi-thread mode is not compatible with chunk-based algorithm");

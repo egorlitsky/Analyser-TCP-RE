@@ -39,6 +39,19 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
             u_short tcpSport, u_short tcpDport, u_int tcpSeq, 
             unsigned char * payload, unsigned int payloadSize) {
     
+    while (payloadSize + this->size > this->maxSize) {
+        StreamCache::cacheIterType streamToRemove = std::min_element(cache.begin(), cache.end());
+        int removedStreamSize = streamToRemove->stream.getSize();
+        
+        if (streamToRemove->stream.isFile) {
+            std::string streamFileName = streamToRemove->stream.fileName;
+            remove(streamFileName.c_str());
+        }
+        
+        cache.erase(streamToRemove);
+        this->size -= removedStreamSize;
+    }
+    
     bool isFileStream = ((fileStreamsCounter < fileStreamsAmount) && payloadSize) ? true : false;
     TcpStream newStream(ipSrc, ipDst, tcpSport, tcpDport, isFileStream);
     bool isStreamExist = false;
@@ -47,8 +60,14 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
         ++fileStreamsCounter;
     }
     
-    if (this->findPayload(payload, payloadSize).dataOffset != -1) {
+    HitData searchResult = this->findPayload(payload, payloadSize);
+    
+    if (searchResult.dataOffset != -1) {
         ++hits;
+        this->cache[searchResult.streamIndex].freq++;
+        if (isFileStream) {
+            --fileStreamsCounter;
+        }
     } else {
         ++misses;
         for (cacheIterType it = cache.begin(); it != cache.end(); ++it) {
@@ -58,15 +77,22 @@ void StreamCache::add(struct in_addr ipSrc, struct in_addr ipDst,
                 if (isFileStream) {
                     --fileStreamsCounter;
                 }
-                
-                it->stream.addPacketToStream(tcpSeq, payload, payloadSize);
+ 
+                int rc = it->stream.addPacketToStream(tcpSeq, payload, payloadSize);
+                if (rc == 0) {
+                    this->size += payloadSize;
+                }
+
                 break;
             }
         }
 
         if (!isStreamExist) {
-            newStream.addPacketToStream(tcpSeq, payload, payloadSize);
-            this->cache.push_back(CacheEntry(newStream));
+            int rc = newStream.addPacketToStream(tcpSeq, payload, payloadSize);
+            if (rc == 0) {
+                this->size += payloadSize;
+            }
+            this->cache.push_back(CacheEntry(0, newStream));
         }
     }
 }
@@ -295,7 +321,8 @@ void StreamCache::printStreamInfo(void) {
 
     for(cacheIterType it = cache.begin(); it != cache.end(); ++it, ++streamIndex) {
         streamInfoFile << "Steam " << streamIndex << " contains "
-                << it->stream.packets.size() << " packets" << std::endl;
+                << it->stream.packets.size() << " packets, frequency = " 
+                << it->freq << std::endl;
     }
 
     streamInfoFile.close();

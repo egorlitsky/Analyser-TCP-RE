@@ -7,8 +7,6 @@
 #define SEARCH_BOYER_MOORE    "boyer_moore"
 #define SEARCH_KMP            "knuth_morris_pratt"
 
-#include <set>
-#include <unordered_map>
 #include <utility>
 #include <string>
 #include "TcpStream.hpp"
@@ -26,8 +24,12 @@ private:
     std::size_t size;
     
     struct CacheEntry {
+        int freq;
         TcpStream stream;
-        CacheEntry(TcpStream &tcpStream): stream(tcpStream) {}
+        CacheEntry(int frequency, TcpStream &tcpStream): freq(frequency), stream(tcpStream) {}
+        bool operator<(CacheEntry const & a) const {
+            return freq < a.freq;
+        }
     };
     
     struct HitData {
@@ -36,6 +38,11 @@ private:
         std::size_t dataSize;
         HitData(int index, int offset, std::size_t size):
             streamIndex(index), dataOffset(offset), dataSize(size) {}
+        void operator =(HitData& b) {
+            this->dataOffset  = b.dataOffset;
+            this->dataSize    = b.dataSize;
+            this->streamIndex = b.streamIndex;
+        }
     };
 
     std::vector<CacheEntry> cache;

@@ -9,6 +9,7 @@
 #include "StreamCacheStructure.hpp"
 #include "CacheStructure.hpp"
 
+#define KiB            1024
 #define STREAM_SIZE_MB 50
 
 const bool PROMICIOUS_MODE  = false;
@@ -100,7 +101,7 @@ int main(int argc, char **argv) {
 
 
         bool isOnline = devArg.isSet();
-        std::size_t cacheSize = cacheSizeArg.getValue() * 1024 * 1024;
+        std::size_t cacheSize = cacheSizeArg.getValue() * KiB * KiB;
         
         std::string ipAddr = ipAddrArg.getValue();
         std::string ipFilter = "";
@@ -155,13 +156,16 @@ int main(int argc, char **argv) {
             ic = new Cache(cacheSize);
         }
 
-        streamSize = streamSizeArg.getValue() * 1024 * 1024;
+        streamSize = streamSizeArg.getValue() * KiB * KiB;
+        if (streamMode && cacheSize < streamSize) {
+            throw std::runtime_error("Cache size cannot be less than Stream size!");
+        }
 
         if (isOnline) {
             int numberOfPackets = packetNumArg.getValue();;
             Reporter rep(numberOfPackets);
             out << "Online capturing" << std::endl;
-            out << "Cache size: " << cacheSize / (1024 * 1024) << " MB" << std::endl;
+            out << "Cache size: " << cacheSize / (KiB * KiB) << " MB" << std::endl;
 
             std::string devName = devArg.getValue();
             NetSniffer snf(devName, PROMICIOUS_MODE, TIMEOUT_MS, ic);
@@ -172,7 +176,7 @@ int main(int argc, char **argv) {
                 << std::endl;
         } else {
             out << "Capturing from files" << std::endl;
-            out << "Cache size: " << cacheSize / (1024  * 1024) << " MB" << std::endl;
+            out << "Cache size: " << cacheSize / (KiB  * KiB) << " MB" << std::endl;
 
             std::vector<std::string> filenames = filenamesArg.getValue();
             time_t timer1, timer2;

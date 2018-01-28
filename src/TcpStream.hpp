@@ -16,11 +16,13 @@ public:
 
     u_short	tcpSport;
     u_short	tcpDport;
-	
+
+    // <tcpSeq, payload>
     std::map<u_int, std::string> packets;
     
     std::string fileName;
     
+    // <tcpSeq, <packetPositionInFile, packetLength>>
     std::map<u_int, std::pair<int, int>> filePackets;
 
     std::string streamData;
@@ -43,7 +45,9 @@ public:
     std::string getStreamData();
     std::map<u_int, std::string> getPackets();
     std::map<u_int, std::string>::iterator get_first_packet();
-    void addPacketToStream(u_int tcpSeq, const unsigned char*,
+    
+    // returns 0 if packet has been added, 1 if there is no space in stream
+    int addPacketToStream(u_int tcpSeq, const unsigned char*,
             const unsigned int size);
 };
 

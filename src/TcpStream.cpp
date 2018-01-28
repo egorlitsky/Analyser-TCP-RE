@@ -90,6 +90,12 @@ std::string TcpStream::getStreamData() {
         std::ifstream inFile;
         inFile.open(this->fileName, std::ifstream::in | std::ifstream::binary);
 
+        if (inFile.fail()) {
+            std::cout << "File Stream " << this->fileName << " has been removed, exiting..."
+                    << std::endl;
+            return streamData;
+        }
+        
         std::stringstream strStream;
         strStream << inFile.rdbuf();
         std::string readed = strStream.str();
@@ -97,10 +103,14 @@ std::string TcpStream::getStreamData() {
         for(auto filePacket : this->filePackets) {
 
             try {
-                if (filePacket.second.first != -1)
-                streamData += readed.substr(filePacket.second.first, filePacket.second.second);
+                // first packet of file
+                if (filePacket.second.first == -1) {
+                    streamData += readed.substr(0, filePacket.second.second);
+                } else {
+                    streamData += readed.substr(filePacket.second.first, filePacket.second.second);
+                }
             } catch (...) {
-                std::cout << "Offset: " << filePacket.second.first << ", size:" <<
+                std::cout << "Exception during read from file! Offset: " << filePacket.second.first << ", size:" <<
                         filePacket.second.second << ", total size: " << readed.length() << std::endl;
             }
         }
@@ -113,7 +123,7 @@ std::string TcpStream::getStreamData() {
     }
 }
 
-void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
+int TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
         const unsigned int req_size) {
 
     if (streamSize >= req_size + _size) {        
@@ -136,7 +146,8 @@ void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
                 std::string lastChunk(payload_str.substr(chunkAmount * chunkSize, lastChunkSize));
                 Md5HashedPayload *hashedPayload = new Md5HashedPayload((unsigned char *) lastChunk.c_str(), chunkSize, false);
                 this->hashedPayloads.insert(std::pair<std::size_t, u_int>(hashedPayload->getHashKey(), tcpSeq));
-            } 
+            }
+            this->_size += req_size;
             
         } else {
             std::string payload_str = "";
@@ -147,13 +158,12 @@ void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
             if (this->isFile) {
                 std::ifstream in(this->fileName, std::ifstream::ate | std::ifstream::binary);
                 int length = in.tellg();
-                
                 std::ofstream streamFile(this->fileName, std::ios::binary | std::ios::app);
                 streamFile << payload_str;
                 streamFile.close();
                 
                 this->filePackets.insert (std::pair<u_int, std::pair<int, int>>(tcpSeq, std::pair<int, int>(length, req_size)));
-                
+                this->_size += req_size;
             } else {
 
                 this->packets.insert (std::pair<u_int, std::string>(tcpSeq, payload_str));
@@ -164,10 +174,11 @@ void TcpStream::addPacketToStream(u_int tcpSeq, const unsigned char *payload,
                     this->streamData += packet.second;
                 }
             }
+            
+            return 0;
         }
     } else {
-        return;
-        // TODO: cache is full -> delete oldest stream
+        return 1;
     }
 }
 
